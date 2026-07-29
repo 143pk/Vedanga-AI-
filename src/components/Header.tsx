@@ -1,0 +1,78 @@
+import React from "react";
+import { Sparkles, Moon, User, LogOut, Compass, Star } from "lucide-react";
+import { UserProfile } from "../types";
+
+interface HeaderProps {
+  user: UserProfile;
+  onOpenProfile: () => void;
+  onLogout: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile, onLogout }) => {
+  const isSubscribed = user.isSubscribed || (typeof localStorage !== "undefined" && localStorage.getItem(`vedanga_sub_${user.email}`) === "true");
+
+  return (
+    <header className="sticky top-0 z-30 bg-slate-950/85 backdrop-blur-md border-b border-amber-500/20 px-4 py-3">
+      <div className="max-w-5xl mx-auto flex items-center justify-between">
+        {/* Logo */}
+        <div className="flex items-center space-x-2.5">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 p-[1.5px] shadow-md shadow-amber-500/20">
+            <div className="w-full h-full bg-slate-950 rounded-xl flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-amber-300" />
+            </div>
+          </div>
+          <div>
+            <span className="font-serif text-lg font-bold tracking-tight bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent">
+              Vedanga AI
+            </span>
+            <div className="flex items-center space-x-1.5 text-[10px] text-emerald-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Guru Online</span>
+            </div>
+          </div>
+        </div>
+
+        {/* User Badge & Controls */}
+        <div className="flex items-center space-x-2">
+          {isSubscribed && (
+            <div className="hidden md:flex items-center space-x-1 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
+              <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
+              <span>VIP Member</span>
+            </div>
+          )}
+
+          {/* Location / Profile Badge */}
+          <button
+            onClick={onOpenProfile}
+            className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-medium hover:bg-amber-500/20 transition-all cursor-pointer"
+          >
+            <Compass className="w-3.5 h-3.5 text-amber-400" />
+            <span className="max-w-[120px] truncate">
+              {user.pob ? user.pob.split("(")[0].trim() : "Birth Profile"}
+            </span>
+          </button>
+
+          {/* User Name button */}
+          <button
+            onClick={onOpenProfile}
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-slate-200 text-xs font-semibold transition-all cursor-pointer"
+          >
+            <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] text-amber-300">
+              <User className="w-3 h-3" />
+            </div>
+            <span className="max-w-[100px] truncate">{user.name}</span>
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={onLogout}
+            title="Log out"
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+};
