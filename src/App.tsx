@@ -7,6 +7,7 @@ import { BottomBarNav } from "./components/BottomBarNav";
 import { GuruChat } from "./components/GuruChat";
 import { KundliView } from "./components/KundliView";
 import { HoroscopeView } from "./components/HoroscopeView";
+import { KundliMatchingView } from "./components/KundliMatchingView";
 import { LearningView } from "./components/LearningView";
 import { ProfileModal } from "./components/ProfileModal";
 import { ActiveTab, UserProfile } from "./types";
@@ -121,6 +122,7 @@ export default function App() {
                   {activeTab === "chat" && <GuruChat user={user} onUpdateUser={handleUpdateUser} />}
                   {activeTab === "kundli" && <KundliView user={user} />}
                   {activeTab === "horoscope" && <HoroscopeView user={user} />}
+                  {activeTab === "matching" && <KundliMatchingView user={user} />}
                   {activeTab === "learning" && <LearningView user={user} />}
                 </motion.div>
               </AnimatePresence>

@@ -1,4 +1,4 @@
-export type ActiveTab = "chat" | "kundli" | "horoscope" | "learning";
+export type ActiveTab = "chat" | "kundli" | "horoscope" | "matching" | "learning";
 
 export interface UserProfile {
   email: string;
