@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, User, RefreshCw, Volume2, VolumeX, ShieldCheck, Star, Lightbulb, Lock, CheckCircle2, Smartphone, Shield, ArrowRight, X, QrCode, Copy, Check, ExternalLink, AlertCircle, Zap, RotateCcw } from "lucide-react";
 import { ChatMessage, UserProfile } from "../types";
 import { saveChatMessageToFirestore, getChatHistoryFromFirestore } from "../lib/firebase";
+import { safeFetchJson } from "../utils/safeFetch";
 
 interface GuruChatProps {
   user: UserProfile;
@@ -277,7 +278,7 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
     }
 
     try {
-      const res = await fetch("/api/astrology/chat", {
+      const response = await safeFetchJson<{ reply?: string; error?: string }>("/api/astrology/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -290,28 +291,29 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Guru is meditating. Please ask again.");
+      if (!response.ok || !response.data?.reply) {
+        throw new Error(response.error || "Guru is meditating. Please ask again.");
       }
+
+      const replyText = response.data.reply;
 
       const guruMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "guru",
-        content: data.reply,
+        content: replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 
       setMessages((prev) => [...prev, guruMessage]);
 
       if (user.email) {
-        saveChatMessageToFirestore(user.email, "assistant", data.reply).catch(() => {});
+        saveChatMessageToFirestore(user.email, "assistant", replyText).catch(() => {});
       }
 
       if (audioActive && "speechSynthesis" in window) {
         const synth = window.speechSynthesis;
         synth.cancel();
-        const utterance = new SpeechSynthesisUtterance(data.reply.replace(/[*#]/g, ""));
+        const utterance = new SpeechSynthesisUtterance(replyText.replace(/[*#]/g, ""));
         utterance.rate = 0.95;
         utterance.pitch = 0.9;
         synth.speak(utterance);
