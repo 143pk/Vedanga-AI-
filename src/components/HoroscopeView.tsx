@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Sun, Heart, Briefcase, Activity, Coins, Sparkles, RefreshCw, Star, Compass, Flame } from "lucide-react";
 import { HoroscopeData, UserProfile } from "../types";
-import { safeFetchJson } from "../utils/safeFetch";
 
 interface HoroscopeViewProps {
   user: UserProfile;
@@ -15,7 +14,7 @@ export const HoroscopeView: React.FC<HoroscopeViewProps> = ({ user }) => {
   const fetchHoroscope = async () => {
     setLoading(true);
     try {
-      const response = await safeFetchJson<{ horoscope?: HoroscopeData }>("/api/astrology/daily-horoscope", {
+      const res = await fetch("/api/astrology/daily-horoscope", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -25,8 +24,9 @@ export const HoroscopeView: React.FC<HoroscopeViewProps> = ({ user }) => {
         }),
       });
 
-      if (response.ok && response.data?.horoscope) {
-        setHoroscope(response.data.horoscope);
+      const data = await res.json();
+      if (res.ok && data.horoscope) {
+        setHoroscope(data.horoscope);
       }
     } catch (err) {
       console.error("Failed to fetch horoscope", err);

@@ -137,6 +137,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
             <span>Privacy First • Vedic AI Calculation</span>
           </span>
+          <span>•</span>
+          <a
+            href="/admin"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.hash = "admin";
+              window.location.reload();
+            }}
+            className="text-slate-500 hover:text-amber-400 transition-colors cursor-pointer"
+          >
+            Admin Panel
+          </a>
         </div>
         <p>© {new Date().getFullYear()} Vedanga AI. Guided by Vedic Wisdom & Gemini GenAI.</p>
       </footer>

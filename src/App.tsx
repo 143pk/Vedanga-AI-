@@ -10,40 +10,82 @@ import { HoroscopeView } from "./components/HoroscopeView";
 import { KundliMatchingView } from "./components/KundliMatchingView";
 import { LearningView } from "./components/LearningView";
 import { ProfileModal } from "./components/ProfileModal";
+import { AdminLogin } from "./components/admin/AdminLogin";
+import { AdminLayout } from "./components/admin/AdminLayout";
 import { ActiveTab, UserProfile } from "./types";
 import { saveUserProfileToFirestore, getUserProfileFromFirestore } from "./lib/firebase";
 
 export default function App() {
-  const [viewState, setViewState] = useState<"landing" | "auth" | "app">("landing");
+  const [viewState, setViewState] = useState<"landing" | "auth" | "app" | "admin">("landing");
   const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Load saved session on mount & sync with Firebase Firestore
-  useEffect(() => {
-    const savedUser = localStorage.getItem("vedanga_user") || localStorage.getItem("astroguru_user");
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        if (parsed && parsed.email) {
-          setUser(parsed);
-          setViewState("app");
+  // Admin authentication state
+  const [adminToken, setAdminToken] = useState<string | null>(() => localStorage.getItem("vedanga_admin_token"));
+  const [adminUser, setAdminUser] = useState<any>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("vedanga_admin_user") || "null");
+    } catch {
+      return null;
+    }
+  });
 
-          // Sync from Firebase Firestore
-          getUserProfileFromFirestore(parsed.email)
-            .then((remoteUser) => {
-              if (remoteUser) {
-                setUser(remoteUser);
-                localStorage.setItem("vedanga_user", JSON.stringify(remoteUser));
-              }
-            })
-            .catch((err) => console.error("Firebase profile fetch failed:", err));
+  // Load saved session on mount & check for /admin path
+  useEffect(() => {
+    if (window.location.pathname === "/admin" || window.location.hash === "#admin") {
+      setViewState("admin");
+    } else {
+      const savedUser = localStorage.getItem("vedanga_user") || localStorage.getItem("astroguru_user");
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          if (parsed && parsed.email) {
+            setUser(parsed);
+            setViewState("app");
+
+            // Sync from Firebase Firestore
+            getUserProfileFromFirestore(parsed.email)
+              .then((remoteUser) => {
+                if (remoteUser) {
+                  setUser(remoteUser);
+                  localStorage.setItem("vedanga_user", JSON.stringify(remoteUser));
+                }
+              })
+              .catch((err) => console.error("Firebase profile fetch failed:", err));
+          }
+        } catch (err) {
+          console.error("Failed to parse saved user", err);
         }
-      } catch (err) {
-        console.error("Failed to parse saved user", err);
       }
     }
   }, []);
+
+  const handleAdminLoginSuccess = (token: string, admin: any) => {
+    setAdminToken(token);
+    setAdminUser(admin);
+    localStorage.setItem("vedanga_admin_token", token);
+    localStorage.setItem("vedanga_admin_user", JSON.stringify(admin));
+    setViewState("admin");
+  };
+
+  const handleAdminLogout = () => {
+    setAdminToken(null);
+    setAdminUser(null);
+    localStorage.removeItem("vedanga_admin_token");
+    localStorage.removeItem("vedanga_admin_user");
+  };
+
+  const handleExitAdmin = () => {
+    if (window.history.pushState) {
+      window.history.pushState({}, "", "/");
+    }
+    if (user) {
+      setViewState("app");
+    } else {
+      setViewState("landing");
+    }
+  };
 
   const handleLoginComplete = (newUser: UserProfile) => {
     setUser(newUser);
@@ -160,6 +202,32 @@ export default function App() {
               onClose={() => setIsProfileOpen(false)}
               onUpdateUser={handleUpdateUser}
             />
+          </motion.div>
+        )}
+
+        {/* 4. Admin View */}
+        {viewState === "admin" && (
+          <motion.div
+            key="admin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="min-h-screen bg-slate-950"
+          >
+            {adminToken ? (
+              <AdminLayout
+                token={adminToken}
+                adminUser={adminUser}
+                onLogout={handleAdminLogout}
+                onExitAdmin={handleExitAdmin}
+              />
+            ) : (
+              <AdminLogin
+                onLoginSuccess={handleAdminLoginSuccess}
+                onBackToApp={handleExitAdmin}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

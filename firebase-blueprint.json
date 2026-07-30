@@ -2,7 +2,7 @@
   "entities": {
     "users": {
       "title": "users",
-      "description": "User profile and birth details storage",
+      "description": "User profile, subscription, and birth details storage",
       "type": "object",
       "properties": {
         "email": { "type": "string" },
@@ -13,6 +13,8 @@
         "gender": { "type": "string" },
         "rashi": { "type": "string" },
         "lagna": { "type": "string" },
+        "status": { "type": "string" },
+        "isSubscribed": { "type": "boolean" },
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       },
@@ -26,9 +28,65 @@
         "userId": { "type": "string" },
         "role": { "type": "string" },
         "content": { "type": "string" },
+        "tokens": { "type": "number" },
         "createdAt": { "type": "string" }
       },
       "required": ["userId", "role", "content"]
+    },
+    "admin_settings": {
+      "title": "admin_settings",
+      "description": "AI, White Label, and Global App Settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "aiConfig": { "type": "object" },
+        "whiteLabel": { "type": "object" },
+        "generalSettings": { "type": "object" }
+      }
+    },
+    "plans": {
+      "title": "plans",
+      "description": "Subscription plans and feature limits",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "interval": { "type": "string" }
+      }
+    },
+    "cms_content": {
+      "title": "cms_content",
+      "description": "CMS articles, horoscopes, remedies and legal documents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" }
+      }
+    },
+    "notifications": {
+      "title": "notifications",
+      "description": "Broadcast notifications and scheduled messages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "logs": {
+      "title": "logs",
+      "description": "System monitoring and error logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
     }
   }
 }

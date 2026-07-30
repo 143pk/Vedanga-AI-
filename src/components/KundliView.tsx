@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Compass, Sparkles, RefreshCw, Star, ShieldCheck, Award, Layers, Calendar, Edit3, Clock, BarChart3, Activity, Flame, ShieldAlert, Zap, Cpu, Eye, Scale, CheckCircle2, HelpCircle, ListOrdered, Sun, Target, BookOpen } from "lucide-react";
 import { KundliData, UserProfile } from "../types";
-import { safeFetchJson } from "../utils/safeFetch";
 
 interface KundliViewProps {
   user: UserProfile;
@@ -113,7 +112,7 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
   const fetchKundli = async (dobOverride?: string, tobOverride?: string, pobOverride?: string) => {
     setLoading(true);
     try {
-      const response = await safeFetchJson<{ kundli?: KundliData }>("/api/astrology/kundli-analysis", {
+      const res = await fetch("/api/astrology/kundli-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -125,8 +124,9 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
         }),
       });
 
-      if (response.ok && response.data?.kundli) {
-        setKundli(response.data.kundli);
+      const data = await res.json();
+      if (res.ok && data.kundli) {
+        setKundli(data.kundli);
       }
     } catch (err) {
       console.error("Failed to fetch Kundli analysis", err);

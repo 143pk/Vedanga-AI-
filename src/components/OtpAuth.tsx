@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { Sparkles, Mail, KeyRound, ArrowRight, User, Calendar, Clock, CheckCircle, RefreshCw } from "lucide-react";
 import { UserProfile } from "../types";
 import { LocationInput } from "./LocationInput";
-import { safeFetchJson } from "../utils/safeFetch";
-import { saveUserProfileToFirestore } from "../lib/firebase";
 
 interface OtpAuthProps {
   onLoginComplete: (user: UserProfile) => void;
@@ -87,24 +85,25 @@ export const OtpAuth: React.FC<OtpAuthProps> = ({ onLoginComplete, onBackToLandi
     setErrorMsg(null);
     setInfoMsg(null);
 
-    const response = await safeFetchJson<{ message?: string; error?: string }>("/api/auth/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-    if (response.ok && response.data?.message) {
-      setInfoMsg(response.data.message);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send verification OTP.");
+      }
+
+      setInfoMsg(data.message || `A verification code has been sent to ${email}`);
       setStep("otp");
-    } else {
-      // Fallback for static environments (e.g. Cloudflare Pages / Workers static build)
-      const fallbackCode = "123456";
-      sessionStorage.setItem("demo_otp_" + email.toLowerCase().trim(), fallbackCode);
-      setInfoMsg(`Verification code sent! (Cloudflare / Static mode code: ${fallbackCode})`);
-      setStep("otp");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Could not request OTP. Try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   // Handle Verify OTP
@@ -118,16 +117,18 @@ export const OtpAuth: React.FC<OtpAuthProps> = ({ onLoginComplete, onBackToLandi
     setLoading(true);
     setErrorMsg(null);
 
-    const response = await safeFetchJson<{ success?: boolean; error?: string }>("/api/auth/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, code: otpCode }),
-    });
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: otpCode }),
+      });
 
-    const storedCode = sessionStorage.getItem("demo_otp_" + email.toLowerCase().trim());
-    const isFallbackValid = otpCode === "123456" || (storedCode && otpCode === storedCode) || otpCode.length === 6;
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Invalid OTP code.");
+      }
 
-    if (response.ok || isFallbackValid) {
       // Auto-populate name from email prefix if empty
       const emailPrefix = email.split("@")[0];
       const formattedName = emailPrefix
@@ -136,15 +137,15 @@ export const OtpAuth: React.FC<OtpAuthProps> = ({ onLoginComplete, onBackToLandi
       setName(formattedName);
 
       setStep("birth_details");
-    } else {
-      setErrorMsg(response.error || "Invalid OTP code. Please try again.");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Verification failed. Try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   // Handle Complete Onboarding
-  const handleSaveProfile = async (e: React.FormEvent) => {
+  const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setErrorMsg("Please enter your name.");
@@ -161,12 +162,6 @@ export const OtpAuth: React.FC<OtpAuthProps> = ({ onLoginComplete, onBackToLandi
       rashi: "Auto-calculated",
       lagna: "Auto-calculated",
     };
-
-    try {
-      await saveUserProfileToFirestore(profile);
-    } catch (err) {
-      console.error("Firebase profile sync warning:", err);
-    }
 
     onLoginComplete(profile);
   };
