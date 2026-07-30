@@ -1,0 +1,34 @@
+{
+  "entities": {
+    "users": {
+      "title": "users",
+      "description": "User profile and birth details storage",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "dob": { "type": "string" },
+        "tob": { "type": "string" },
+        "pob": { "type": "string" },
+        "gender": { "type": "string" },
+        "rashi": { "type": "string" },
+        "lagna": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["email", "name"]
+    },
+    "chat_messages": {
+      "title": "chat_messages",
+      "description": "AstroGuru chat message logs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "role", "content"]
+    }
+  }
+}

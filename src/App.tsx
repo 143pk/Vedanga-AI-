@@ -11,6 +11,7 @@ import { KundliMatchingView } from "./components/KundliMatchingView";
 import { LearningView } from "./components/LearningView";
 import { ProfileModal } from "./components/ProfileModal";
 import { ActiveTab, UserProfile } from "./types";
+import { saveUserProfileToFirestore, getUserProfileFromFirestore } from "./lib/firebase";
 
 export default function App() {
   const [viewState, setViewState] = useState<"landing" | "auth" | "app">("landing");
@@ -18,7 +19,7 @@ export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Load saved session on mount
+  // Load saved session on mount & sync with Firebase Firestore
   useEffect(() => {
     const savedUser = localStorage.getItem("vedanga_user") || localStorage.getItem("astroguru_user");
     if (savedUser) {
@@ -27,6 +28,16 @@ export default function App() {
         if (parsed && parsed.email) {
           setUser(parsed);
           setViewState("app");
+
+          // Sync from Firebase Firestore
+          getUserProfileFromFirestore(parsed.email)
+            .then((remoteUser) => {
+              if (remoteUser) {
+                setUser(remoteUser);
+                localStorage.setItem("vedanga_user", JSON.stringify(remoteUser));
+              }
+            })
+            .catch((err) => console.error("Firebase profile fetch failed:", err));
         }
       } catch (err) {
         console.error("Failed to parse saved user", err);
@@ -38,6 +49,11 @@ export default function App() {
     setUser(newUser);
     localStorage.setItem("vedanga_user", JSON.stringify(newUser));
     setViewState("app");
+
+    // Save user profile to Firebase Firestore
+    saveUserProfileToFirestore(newUser).catch((err) =>
+      console.error("Error saving user to Firebase Firestore:", err)
+    );
   };
 
   const handleLogout = () => {
@@ -59,6 +75,11 @@ export default function App() {
   const handleUpdateUser = (updatedUser: UserProfile) => {
     setUser(updatedUser);
     localStorage.setItem("vedanga_user", JSON.stringify(updatedUser));
+
+    // Update user profile in Firebase Firestore
+    saveUserProfileToFirestore(updatedUser).catch((err) =>
+      console.error("Error updating user in Firebase Firestore:", err)
+    );
   };
 
   return (

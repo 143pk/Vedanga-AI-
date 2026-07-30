@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, User, RefreshCw, Volume2, VolumeX, ShieldCheck, Star, Lightbulb, Lock, CheckCircle2, Smartphone, Shield, ArrowRight, X, QrCode, Copy, Check, ExternalLink, AlertCircle, Zap, RotateCcw } from "lucide-react";
 import { ChatMessage, UserProfile } from "../types";
+import { saveChatMessageToFirestore, getChatHistoryFromFirestore } from "../lib/firebase";
 
 interface GuruChatProps {
   user: UserProfile;
@@ -271,6 +272,10 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
     setInputMsg("");
     setLoading(true);
 
+    if (user.email) {
+      saveChatMessageToFirestore(user.email, "user", query).catch(() => {});
+    }
+
     try {
       const res = await fetch("/api/astrology/chat", {
         method: "POST",
@@ -298,6 +303,10 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
       };
 
       setMessages((prev) => [...prev, guruMessage]);
+
+      if (user.email) {
+        saveChatMessageToFirestore(user.email, "assistant", data.reply).catch(() => {});
+      }
 
       if (audioActive && "speechSynthesis" in window) {
         const synth = window.speechSynthesis;
