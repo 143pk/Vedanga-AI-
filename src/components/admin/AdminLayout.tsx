@@ -53,6 +53,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
   const [activeSection, setActiveSection] = useState<AdminViewSection>("overview");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // Realtime Auto-Sync states
+  const [isRealtime, setIsRealtime] = useState(true);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string>("");
+  const [isSimulating, setIsSimulating] = useState(false);
+
   // Data states
   const [overviewData, setOverviewData] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -68,8 +73,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
   const [loading, setLoading] = useState(true);
 
   // Fetch all admin data using token
-  const fetchAdminData = async () => {
-    setLoading(true);
+  const fetchAdminData = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const headers = { "x-admin-token": token };
 
@@ -131,16 +136,49 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
         const st = await settingsRes.json();
         setSystemSettings(st.settings || st);
       }
+      setLastSyncedAt(new Date().toLocaleTimeString());
     } catch (err) {
       console.error("Error loading admin data:", err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
+  // Initial fetch
   useEffect(() => {
-    fetchAdminData();
+    fetchAdminData(false);
   }, [token]);
+
+  // Real-time polling every 3 seconds
+  useEffect(() => {
+    if (!isRealtime) return;
+    const interval = setInterval(() => {
+      fetchAdminData(true);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [token, isRealtime]);
+
+  // Handler for simulating real-time activity
+  const handleSimulateActivity = async (action: "new_user" | "ai_chat" | "system_alert") => {
+    setIsSimulating(true);
+    try {
+      const res = await fetch("/api/admin/simulate-activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": token,
+        },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        await fetchAdminData(true);
+      }
+    } catch (err) {
+      console.error("Error triggering simulation:", err);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
   const navItems = [
     { id: "overview", label: "Dashboard Overview", icon: LayoutDashboard },
@@ -260,18 +298,63 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Top Breadcrumb Bar */}
-        <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800/60">
+        {/* Top Breadcrumb & Realtime Control Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-slate-400 pb-3 border-b border-slate-800/80 bg-slate-900/40 p-3 rounded-2xl border border-slate-800/60">
           <div className="flex items-center gap-2 font-mono">
-            <span>Admin</span>
-            <ChevronRight className="w-3 h-3 text-slate-600" />
-            <span className="text-amber-400 capitalize">{activeSection.replace("-", " ")}</span>
+            <span className="text-slate-400 font-semibold">Admin Console</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+            <span className="text-amber-400 font-bold capitalize">{activeSection.replace("-", " ")}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-mono text-[10px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              System Status: Operational
-            </span>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Realtime Indicator */}
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border font-mono text-[11px] transition-all ${
+              isRealtime
+                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                : "bg-slate-800 text-slate-400 border-slate-700"
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${isRealtime ? "bg-emerald-400 animate-pulse shadow-lg shadow-emerald-500/50" : "bg-slate-500"}`} />
+              <span className="font-semibold">{isRealtime ? "LIVE Realtime Sync" : "Sync Paused"}</span>
+              {lastSyncedAt && <span className="text-[10px] text-slate-400 font-mono">({lastSyncedAt})</span>}
+            </div>
+
+            {/* Realtime Toggle Button */}
+            <button
+              onClick={() => setIsRealtime(!isRealtime)}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium border border-slate-700 transition-colors flex items-center gap-1.5"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isRealtime ? "text-amber-400" : "text-slate-500"}`} />
+              <span>{isRealtime ? "Pause" : "Live"}</span>
+            </button>
+
+            {/* Quick Live Event Simulator */}
+            <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+              <span className="text-[10px] text-slate-500 px-1 font-mono uppercase font-semibold">Simulate:</span>
+              <button
+                disabled={isSimulating}
+                onClick={() => handleSimulateActivity("new_user")}
+                className="px-2 py-0.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-[10px] font-mono border border-blue-500/30 transition-all disabled:opacity-50"
+                title="Simulate new user registration"
+              >
+                +User
+              </button>
+              <button
+                disabled={isSimulating}
+                onClick={() => handleSimulateActivity("ai_chat")}
+                className="px-2 py-0.5 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[10px] font-mono border border-purple-500/30 transition-all disabled:opacity-50"
+                title="Simulate AI AstroGuru chat consultation"
+              >
+                +Chat
+              </button>
+              <button
+                disabled={isSimulating}
+                onClick={() => handleSimulateActivity("system_alert")}
+                className="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-[10px] font-mono border border-rose-500/30 transition-all disabled:opacity-50"
+                title="Simulate real-time system alert log"
+              >
+                +Alert
+              </button>
+            </div>
           </div>
         </div>
 
