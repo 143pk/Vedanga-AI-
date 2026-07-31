@@ -4,7 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import nodemailer from "nodemailer";
 import QRCode from "qrcode";
-import { calculateVedicKundli } from "./src/lib/vedicCalculator.ts";
+import { calculateVedicKundli } from "./src/lib/vedicCalculator.js";
 
 const app = express();
 const PORT = 3000;
