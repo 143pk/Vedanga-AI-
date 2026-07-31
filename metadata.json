@@ -1,6 +1,6 @@
 {
-  "name": "Vedanga AI - Vedic Astrology & Kundli Advisor",
-  "description": "Personalized daily horoscopes, deep natal chart (Kundli) analysis, Gun Milan matching, and instant AI Guru consultations.",
+  "name": "Vedanga AI – Vedic Astrology & Kundli Advisor",
+  "description": "Personal AI Guru for Vedic Astrology, Kundli Analysis, Horoscope, Remedies, Kundli Matching, and Spiritual Guidance.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
