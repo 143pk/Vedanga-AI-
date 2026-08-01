@@ -132,11 +132,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
       {/* Footer */}
       <footer className="px-6 py-4 text-center border-t border-slate-900 text-xs text-slate-500 z-10">
-        <div className="flex items-center justify-center space-x-4 mb-1">
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-2 text-xs text-slate-500">
           <span className="flex items-center space-x-1">
             <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
             <span>Privacy First • Vedic AI Calculation</span>
           </span>
+          <span>•</span>
+          <a
+            href="/sitemap.xml"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-400 hover:text-amber-400 transition-colors"
+          >
+            Sitemap.xml
+          </a>
+          <span>•</span>
+          <a
+            href="/robots.txt"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-400 hover:text-amber-400 transition-colors"
+          >
+            Robots.txt
+          </a>
           <span>•</span>
           <a
             href="/admin"
@@ -145,7 +163,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               window.location.hash = "admin";
               window.location.reload();
             }}
-            className="text-slate-500 hover:text-amber-400 transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
           >
             Admin Panel
           </a>

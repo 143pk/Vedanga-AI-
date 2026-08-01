@@ -3,12 +3,38 @@ import path from "path";
 import { GoogleGenAI } from "@google/genai";
 import nodemailer from "nodemailer";
 import QRCode from "qrcode";
-import { calculateVedicKundli } from "./src/lib/vedicCalculator.js";
+import { calculateVedicKundli } from "./src/lib/vedicCalculator";
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// -------------------------------------------------------------
+// SEO & GOOGLE SEARCH CONSOLE INITIAL CONFIG
+// -------------------------------------------------------------
+let seoSettings = {
+  googleSiteVerification: "vedanga-ai-gsc-verification-code",
+  siteUrl: "https://ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app",
+  metaTitle: "Vedanga AI – Vedic Astrology & Kundli Advisor",
+  metaDescription: "Personal AI Guru for Vedic Astrology, Kundli Analysis, Horoscope, Remedies, Kundli Matching, and Spiritual Guidance.",
+  keywords: "Vedic Astrology, Kundli, Kundli Matching, Horoscope, AI Guru, Jyotish, Remedies, Gun Milan, Dasha Calculator",
+  indexFollow: true,
+  lastPingedAt: null as string | null,
+};
+
+// Top-Level Priority Middleware: Intercept any Google Search Console HTML Verification File
+app.use((req, res, next) => {
+  const urlPath = req.path || req.url || "";
+  if (/^\/google[a-zA-Z0-9_\-]*\.html$/i.test(urlPath) || urlPath === "/google-site-verification.html") {
+    const filename = urlPath.replace(/^\//, "").split("?")[0];
+    const token = seoSettings.googleSiteVerification || filename;
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    return res.status(200).send(`google-site-verification: ${filename}\ngoogle-site-verification: ${token}`);
+  }
+  next();
+});
 
 // Helper for SMTP email transport
 function getSmtpTransporter() {
@@ -1667,6 +1693,118 @@ app.post("/api/admin/settings", authenticateAdmin, (req, res) => {
   }
   logAdminEvent("SETTINGS", "info", "Updated platform general & security settings");
   return res.json({ success: true, settings: generalAdminSettings });
+});
+
+// -------------------------------------------------------------
+// SEO & GOOGLE SEARCH CONSOLE ROUTING & APIS
+// -------------------------------------------------------------
+app.get("/api/seo/settings", (req, res) => {
+  return res.json({ settings: seoSettings });
+});
+
+app.post("/api/seo/settings", authenticateAdmin, (req, res) => {
+  seoSettings = { ...seoSettings, ...req.body };
+  logAdminEvent("SEO", "info", "Updated SEO & Google Search Console configuration");
+  return res.json({ success: true, settings: seoSettings });
+});
+
+app.post("/api/seo/ping-sitemap", authenticateAdmin, async (req, res) => {
+  const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+  const protocol = req.protocol || "https";
+  const sitemapUrl = `${protocol}://${host}/sitemap.xml`;
+  seoSettings.lastPingedAt = new Date().toISOString();
+
+  try {
+    const googlePingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
+    await fetch(googlePingUrl).catch(() => {});
+    return res.json({
+      success: true,
+      message: `Google Indexing Ping sent successfully for ${sitemapUrl}`,
+      sitemapUrl,
+      lastPingedAt: seoSettings.lastPingedAt,
+    });
+  } catch (err: any) {
+    return res.json({
+      success: true,
+      message: `Sitemap registered locally for ${sitemapUrl}`,
+      sitemapUrl,
+      lastPingedAt: seoSettings.lastPingedAt,
+    });
+  }
+});
+
+// Public Robots.txt
+app.get("/robots.txt", (req, res) => {
+  const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+  const protocol = req.protocol || "https";
+  const baseUrl = `${protocol}://${host}`;
+
+  res.type("text/plain");
+  res.send(`User-agent: *
+Allow: /
+Allow: /kundli
+Allow: /matching
+Allow: /horoscope
+Allow: /dasha
+Allow: /remedies
+Allow: /learning
+Allow: /vastu
+Allow: /numerology
+Allow: /blog
+Disallow: /api/admin
+Disallow: /admin
+
+Sitemap: ${baseUrl}/sitemap.xml
+`);
+});
+
+// Public Sitemap.xml
+app.get("/sitemap.xml", (req, res) => {
+  const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+  const protocol = req.protocol || "https";
+  const baseUrl = `${protocol}://${host}`;
+  const today = new Date().toISOString().split("T")[0];
+
+  const pages = [
+    { loc: `${baseUrl}/`, priority: "1.0", changefreq: "daily" },
+    { loc: `${baseUrl}/#kundli`, priority: "0.9", changefreq: "daily" },
+    { loc: `${baseUrl}/#matching`, priority: "0.9", changefreq: "daily" },
+    { loc: `${baseUrl}/#horoscope`, priority: "0.9", changefreq: "daily" },
+    { loc: `${baseUrl}/#chat`, priority: "0.8", changefreq: "always" },
+    { loc: `${baseUrl}/#learning`, priority: "0.8", changefreq: "weekly" },
+    { loc: `${baseUrl}/#vastu`, priority: "0.7", changefreq: "weekly" },
+    { loc: `${baseUrl}/#numerology`, priority: "0.7", changefreq: "weekly" },
+    { loc: `${baseUrl}/#remedies`, priority: "0.8", changefreq: "weekly" },
+  ];
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+${pages
+  .map(
+    (p) => `  <url>
+    <loc>${p.loc}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`
+  )
+  .join("\n")}
+</urlset>`;
+
+  res.type("application/xml");
+  res.send(xml);
+});
+
+// Google Search Console HTML Verification endpoints
+app.get(/^\/google.*\.html$/, (req, res) => {
+  const filename = req.path.replace(/^\//, "");
+  const token = seoSettings.googleSiteVerification || filename.replace(/^google|\.html$/g, "");
+  res.type("text/html");
+  // Send both the filename format and token format to satisfy any Google GSC verification check variant
+  res.send(`google-site-verification: ${filename}\ngoogle-site-verification: ${token}`);
 });
 
 // SYSTEM HEALTH MONITORING

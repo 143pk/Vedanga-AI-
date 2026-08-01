@@ -29,6 +29,8 @@ import { AnalyticsView } from "./AnalyticsView";
 import { ErrorLogsView } from "./ErrorLogsView";
 import { WhiteLabelView } from "./WhiteLabelView";
 import { SystemSettingsView } from "./SystemSettingsView";
+import { SeoSearchConsoleView } from "./SeoSearchConsoleView";
+import { Search } from "lucide-react";
 
 interface AdminLayoutProps {
   token: string;
@@ -47,7 +49,8 @@ export type AdminViewSection =
   | "analytics"
   | "logs"
   | "white-label"
-  | "settings";
+  | "settings"
+  | "seo";
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLogout, onExitAdmin }) => {
   const [activeSection, setActiveSection] = useState<AdminViewSection>("overview");
@@ -72,6 +75,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
 
   const [loading, setLoading] = useState(true);
 
+  // Helper for resilient JSON fetching without crashing Promise.all
+  const safeFetchJson = async (url: string, headers: Record<string, string>) => {
+    try {
+      const res = await fetch(url, { headers });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (err) {
+      return null;
+    }
+  };
+
   // Fetch all admin data using token
   const fetchAdminData = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
@@ -79,7 +93,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
       const headers = { "x-admin-token": token };
 
       const [
-        overviewRes,
+        overviewDataRes,
         usersRes,
         plansRes,
         aiConfigRes,
@@ -90,55 +104,32 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
         whiteLabelRes,
         settingsRes,
       ] = await Promise.all([
-        fetch("/api/admin/overview-stats", { headers }),
-        fetch("/api/admin/users", { headers }),
-        fetch("/api/admin/plans", { headers }),
-        fetch("/api/admin/ai-config", { headers }),
-        fetch("/api/admin/cms", { headers }),
-        fetch("/api/admin/notifications", { headers }),
-        fetch("/api/admin/analytics", { headers }),
-        fetch("/api/admin/logs", { headers }),
-        fetch("/api/admin/white-label", { headers }),
-        fetch("/api/admin/settings", { headers }),
+        safeFetchJson("/api/admin/overview-stats", headers),
+        safeFetchJson("/api/admin/users", headers),
+        safeFetchJson("/api/admin/plans", headers),
+        safeFetchJson("/api/admin/ai-config", headers),
+        safeFetchJson("/api/admin/cms", headers),
+        safeFetchJson("/api/admin/notifications", headers),
+        safeFetchJson("/api/admin/analytics", headers),
+        safeFetchJson("/api/admin/logs", headers),
+        safeFetchJson("/api/admin/white-label", headers),
+        safeFetchJson("/api/admin/settings", headers),
       ]);
 
-      if (overviewRes.ok) setOverviewData(await overviewRes.json());
-      if (usersRes.ok) {
-        const u = await usersRes.json();
-        setUsers(Array.isArray(u) ? u : u.users || []);
-      }
-      if (plansRes.ok) {
-        const p = await plansRes.json();
-        setPlans(Array.isArray(p) ? p : p.plans || []);
-      }
-      if (aiConfigRes.ok) {
-        const ai = await aiConfigRes.json();
-        setAiConfig(ai.config || ai);
-      }
-      if (cmsRes.ok) {
-        const c = await cmsRes.json();
-        setCmsArticles(Array.isArray(c) ? c : c.articles || []);
-      }
-      if (notifRes.ok) {
-        const n = await notifRes.json();
-        setNotifications(Array.isArray(n) ? n : n.notifications || []);
-      }
-      if (analyticsRes.ok) setAnalyticsData(await analyticsRes.json());
-      if (logsRes.ok) {
-        const l = await logsRes.json();
-        setLogs(Array.isArray(l) ? l : l.logs || []);
-      }
-      if (whiteLabelRes.ok) {
-        const wl = await whiteLabelRes.json();
-        setWhiteLabelSettings(wl.settings || wl);
-      }
-      if (settingsRes.ok) {
-        const st = await settingsRes.json();
-        setSystemSettings(st.settings || st);
-      }
+      if (overviewDataRes) setOverviewData(overviewDataRes);
+      if (usersRes) setUsers(Array.isArray(usersRes) ? usersRes : usersRes.users || []);
+      if (plansRes) setPlans(Array.isArray(plansRes) ? plansRes : plansRes.plans || []);
+      if (aiConfigRes) setAiConfig(aiConfigRes.config || aiConfigRes);
+      if (cmsRes) setCmsArticles(Array.isArray(cmsRes) ? cmsRes : cmsRes.articles || []);
+      if (notifRes) setNotifications(Array.isArray(notifRes) ? notifRes : notifRes.notifications || []);
+      if (analyticsRes) setAnalyticsData(analyticsRes);
+      if (logsRes) setLogs(Array.isArray(logsRes) ? logsRes : logsRes.logs || []);
+      if (whiteLabelRes) setWhiteLabelSettings(whiteLabelRes.settings || whiteLabelRes);
+      if (settingsRes) setSystemSettings(settingsRes.settings || settingsRes);
+
       setLastSyncedAt(new Date().toLocaleTimeString());
     } catch (err) {
-      console.error("Error loading admin data:", err);
+      // Graceful silence for polling hiccups
     } finally {
       if (!isBackground) setLoading(false);
     }
@@ -190,6 +181,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
     { id: "analytics", label: "Deep Analytics", icon: BarChart3 },
     { id: "logs", label: "Error Logs & Telemetry", icon: ShieldAlert, alert: logs.length > 0 },
     { id: "white-label", label: "White Label Settings", icon: Palette },
+    { id: "seo", label: "Google Search & SEO", icon: Search },
     { id: "settings", label: "System & Security", icon: Settings },
   ];
 
@@ -388,6 +380,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ token, adminUser, onLo
         )}
         {activeSection === "settings" && (
           <SystemSettingsView settings={systemSettings} token={token} onRefresh={fetchAdminData} />
+        )}
+        {activeSection === "seo" && (
+          <SeoSearchConsoleView token={token} />
         )}
       </main>
     </div>
