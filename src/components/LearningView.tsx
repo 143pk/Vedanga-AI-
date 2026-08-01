@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BookOpen,
   Sun,
@@ -19,7 +19,13 @@ import {
   Star,
   Quote,
   Feather,
-  BookMarked
+  BookMarked,
+  Search,
+  Zap,
+  Calendar,
+  X,
+  Clock,
+  TrendingUp
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -28,6 +34,7 @@ interface LearningViewProps {
 }
 
 type LearningSection =
+  | "trending"
   | "lesson"
   | "planet"
   | "nakshatra"
@@ -36,7 +43,7 @@ type LearningSection =
   | "story";
 
 export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
-  const [activeSection, setActiveSection] = useState<LearningSection>("lesson");
+  const [activeSection, setActiveSection] = useState<LearningSection>("trending");
   const [bookmarkedItems, setBookmarkedItems] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("vedanga_bookmarks");
@@ -45,6 +52,57 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
       return [];
     }
   });
+
+  const [cmsArticles, setCmsArticles] = useState<any[]>([]);
+  const [trendingTopicsList, setTrendingTopicsList] = useState<any[]>([]);
+  const [articleCategory, setArticleCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedArticleModal, setSelectedArticleModal] = useState<any | null>(null);
+  const [readerFontSize, setReaderFontSize] = useState<"sm" | "base" | "lg">("base");
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [copiedToast, setCopiedToast] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetch("/api/cms/articles")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.articles) setCmsArticles(data.articles);
+        if (data.trendingTopics) setTrendingTopicsList(data.trendingTopics);
+      })
+      .catch((err) => console.error("Failed to load CMS articles", err));
+  }, []);
+
+  // Scroll to top when opening an article post
+  useEffect(() => {
+    if (selectedArticleModal) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      document.body.style.overflow = "unset";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedArticleModal]);
+
+  // Text to Speech for 3-minute post listening
+  const handleToggleSpeech = (text: string) => {
+    if (!("speechSynthesis" in window)) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const cleanText = text.replace(/[#*`]/g, "");
+      const utterance = new SpeechSynthesisUtterance(cleanText.substring(0, 3000));
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+      setIsSpeaking(true);
+    }
+  };
 
   const [selectedPlanetIdx, setSelectedPlanetIdx] = useState<number>(0);
   const [selectedNakshatraIdx, setSelectedNakshatraIdx] = useState<number>(0);
@@ -427,6 +485,205 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
   const currentGuru = guruWisdom[0];
   const currentStory = vedicStories[selectedStoryIdx];
 
+  // Full-Page Dedicated Post Reader View (Isolated Complete View)
+  if (selectedArticleModal) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-28 animate-fade-in">
+        {/* Sticky Header with Back Button & Controls */}
+        <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-amber-500/30 px-4 md:px-8 py-3.5 flex items-center justify-between shadow-2xl">
+          <button
+            onClick={() => {
+              setSelectedArticleModal(null);
+              if (isSpeaking) {
+                window.speechSynthesis?.cancel();
+                setIsSpeaking(false);
+              }
+              window.scrollTo({ top: 0, behavior: "instant" });
+            }}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-amber-500/20"
+          >
+            <X className="w-4 h-4" />
+            <span>← Back to All Posts</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Audio Button */}
+            <button
+              onClick={() => handleToggleSpeech(selectedArticleModal.content)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                isSpeaking
+                  ? "bg-amber-500 text-slate-950 border-amber-400 font-bold animate-pulse"
+                  : "bg-slate-950 text-amber-300 border-amber-500/30 hover:border-amber-400"
+              }`}
+              title="Listen to Post Audio"
+            >
+              <Volume2 className="w-4 h-4" />
+              <span className="hidden sm:inline">{isSpeaking ? "Pause Audio" : "Listen (Audio)"}</span>
+            </button>
+
+            {/* Font Size Selector */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+              <button
+                onClick={() => setReaderFontSize("sm")}
+                className={`px-2.5 py-1 rounded-lg ${readerFontSize === "sm" ? "bg-amber-500 text-slate-950 font-bold" : "text-slate-400"}`}
+              >
+                A-
+              </button>
+              <button
+                onClick={() => setReaderFontSize("base")}
+                className={`px-2.5 py-1 rounded-lg ${readerFontSize === "base" ? "bg-amber-500 text-slate-950 font-bold" : "text-slate-400"}`}
+              >
+                A
+              </button>
+              <button
+                onClick={() => setReaderFontSize("lg")}
+                className={`px-2.5 py-1 rounded-lg ${readerFontSize === "lg" ? "bg-amber-500 text-slate-950 font-bold" : "text-slate-400"}`}
+              >
+                A+
+              </button>
+            </div>
+
+            {/* Bookmark Button */}
+            <button
+              onClick={() => toggleBookmark(selectedArticleModal.id)}
+              className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${
+                bookmarkedItems.includes(selectedArticleModal.id)
+                  ? "bg-amber-500 text-slate-950 border-amber-400"
+                  : "bg-slate-950 text-slate-300 border-slate-800 hover:border-amber-500/40"
+              }`}
+              title="Bookmark Post"
+            >
+              <Bookmark className={`w-4 h-4 ${bookmarkedItems.includes(selectedArticleModal.id) ? "fill-slate-950" : ""}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Dedicated Single Article Page Content */}
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-10">
+          <div className="bg-slate-900/90 border border-amber-500/30 p-6 md:p-12 rounded-3xl shadow-2xl space-y-8">
+            {/* Header Metadata */}
+            <div className="space-y-4 border-b border-slate-800 pb-6">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full">
+                  {selectedArticleModal.category}
+                </span>
+                <span className="text-xs text-amber-400 font-mono flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> {selectedArticleModal.readTime || "7 min read"}
+                </span>
+              </div>
+
+              <h1 className="font-serif text-3xl md:text-5xl font-extrabold text-amber-100 leading-tight">
+                {selectedArticleModal.title}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm text-slate-400 font-mono pt-2">
+                <span>Author: <strong className="text-amber-200">{selectedArticleModal.author || "Acharya Vedanga"}</strong></span>
+                <span>•</span>
+                <span>Published: {selectedArticleModal.updatedAt || "Today"}</span>
+                <span>•</span>
+                <span className="text-amber-300 font-bold">
+                  {selectedArticleModal.content ? selectedArticleModal.content.split(/\s+/).length : 600} Words
+                </span>
+              </div>
+            </div>
+
+            {/* Formatted Article Content Body */}
+            <div
+              className={`space-y-6 leading-relaxed font-sans text-slate-200 ${
+                readerFontSize === "sm" ? "text-sm md:text-base" : readerFontSize === "lg" ? "text-lg md:text-xl" : "text-base md:text-lg"
+              }`}
+            >
+              {(selectedArticleModal.content || "").split("\n\n").map((paragraph: string, idx: number) => {
+                const trimmed = paragraph.trim();
+                if (trimmed.startsWith("###")) {
+                  return (
+                    <div key={idx} className="pt-6 pb-2 border-b border-amber-500/30">
+                      <h3 className="font-serif text-xl md:text-2xl font-bold text-amber-300 flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+                        {trimmed.replace(/^###\s*/, "")}
+                      </h3>
+                    </div>
+                  );
+                }
+                if (trimmed.startsWith("---")) {
+                  return <hr key={idx} className="border-amber-500/20 my-6" />;
+                }
+                if (trimmed.startsWith("- ") || trimmed.startsWith("1.") || trimmed.startsWith("2.") || trimmed.startsWith("3.")) {
+                  return (
+                    <ul key={idx} className="space-y-3 bg-slate-950/80 p-6 rounded-2xl border border-slate-800 text-slate-300 my-4">
+                      {trimmed.split("\n").map((line, lIdx) => (
+                        <li key={lIdx} className="flex items-start gap-3">
+                          <span className="text-amber-400 font-bold shrink-0 mt-0.5">•</span>
+                          <span>{line.replace(/^[-*1234567890.]\s*/, "").replace(/\*\*(.*?)\*\*/g, "$1")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                }
+                return (
+                  <p key={idx} className="text-slate-300 leading-relaxed font-normal">
+                    {trimmed.split(/(\*\*.*?\*\*)/).map((part, pIdx) => {
+                      if (part.startsWith("**") && part.endsWith("**")) {
+                        return (
+                          <strong key={pIdx} className="text-amber-200 font-semibold">
+                            {part.slice(2, -2)}
+                          </strong>
+                        );
+                      }
+                      return part;
+                    })}
+                  </p>
+                );
+              })}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => toggleBookmark(selectedArticleModal.id)}
+                  className={`flex-1 sm:flex-none px-5 py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                    bookmarkedItems.includes(selectedArticleModal.id)
+                      ? "bg-amber-500 text-slate-950 border-amber-400"
+                      : "bg-slate-950 text-slate-300 border-slate-800 hover:border-amber-500/40"
+                  }`}
+                >
+                  <Bookmark className="w-4 h-4" />
+                  <span>{bookmarkedItems.includes(selectedArticleModal.id) ? "Saved in Bookmarks" : "Save Article"}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    setCopiedToast(true);
+                    setTimeout(() => setCopiedToast(false), 3000);
+                  }}
+                  className="flex-1 sm:flex-none px-5 py-3 bg-slate-950 text-slate-300 border border-slate-800 hover:border-amber-500/40 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4 text-amber-400" />
+                  <span>{copiedToast ? "Copied Link!" : "Share Post"}</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedArticleModal(null);
+                  if (isSpeaking) {
+                    window.speechSynthesis?.cancel();
+                    setIsSpeaking(false);
+                  }
+                }}
+                className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold rounded-2xl text-xs transition-all cursor-pointer shadow-xl shadow-amber-500/20"
+              >
+                ← Return to All Posts
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
       {/* Top Banner Header */}
@@ -456,6 +713,7 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
         {/* Navigation Section Pills */}
         <div className="flex gap-2 overflow-x-auto pt-5 scrollbar-none">
           {[
+            { id: "trending", label: "🔥 Daily Auto-Posts & Trending Topics", icon: Flame },
             { id: "lesson", label: "Daily Lesson", icon: BookOpen },
             { id: "planet", label: "Planet of the Day", icon: Sun },
             { id: "nakshatra", label: "Nakshatra Wisdom", icon: Moon },
@@ -482,6 +740,164 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
           })}
         </div>
       </div>
+
+      {/* SECTION 0: DAILY TRENDING TOPICS & AUTOMATED POSTS */}
+      {activeSection === "trending" && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Automated Publishing Status Banner */}
+          <div className="p-4 bg-gradient-to-r from-amber-950/60 via-purple-950/60 to-slate-900 border border-amber-500/40 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2.5 w-2.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                </span>
+                <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" /> Webapp Daily Auto-Publish Engine Active
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Our Gemini AI engine automatically scans top daily searched Vedic Astrology topics (Panchang, Sade Sati, Transits, Vrats, Remedies) and generates fresh SEO-optimized insights every 24 hours.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-2xl border border-slate-800 shrink-0">
+              <Clock className="w-3.5 h-3.5 text-amber-400" /> Next Post: Daily at 00:00 UTC
+            </div>
+          </div>
+
+          {/* Daily Trending Search Topics Carousel */}
+          {trendingTopicsList.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-amber-200/90 flex items-center gap-1.5 uppercase tracking-wider">
+                <TrendingUp className="w-4 h-4 text-amber-400" /> Daily Top Searched Jyotish Topics
+              </span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {trendingTopicsList.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 p-2.5 rounded-2xl text-xs whitespace-nowrap flex items-center gap-2 transition-all cursor-default"
+                  >
+                    <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                      #{idx + 1} Trending
+                    </span>
+                    <span className="text-slate-200 font-medium">{item.topic}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Search & Category Filter */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Search daily insights & topics..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 rounded-2xl pl-9 pr-3 py-2 text-xs text-slate-200 outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
+              {["All", "Panchang", "Transits", "Dasha", "Remedies", "Fasting", "Matching", "Gemstones"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setArticleCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    articleCategory === cat
+                      ? "bg-amber-500 text-slate-950 font-bold"
+                      : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Articles Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {cmsArticles
+              .filter((art) => {
+                const matchesCat = articleCategory === "All" || art.category === articleCategory;
+                const matchesSearch =
+                  !searchQuery ||
+                  art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  art.content.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesCat && matchesSearch;
+              })
+              .map((art) => {
+                const isBookmarked = bookmarkedItems.includes(art.id);
+                const wordCount = art.content ? art.content.split(/\s+/).length : 500;
+                return (
+                  <div
+                    key={art.id}
+                    onClick={() => setSelectedArticleModal(art)}
+                    className="p-5 rounded-3xl bg-slate-900/90 border border-amber-500/30 hover:border-amber-500/60 transition-all flex flex-col justify-between space-y-4 shadow-xl group hover:shadow-amber-500/10 cursor-pointer"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                            {art.category}
+                          </span>
+                          {art.isAutoGenerated && (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-purple-300" /> Daily Auto-Post
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-amber-400 bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800">
+                            {wordCount} Words
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(art.id);
+                          }}
+                          className="text-slate-500 hover:text-amber-400 transition-colors p-1 cursor-pointer"
+                          title="Bookmark Article"
+                        >
+                          <Bookmark
+                            className={`w-4 h-4 ${isBookmarked ? "text-amber-400 fill-amber-400" : ""}`}
+                          />
+                        </button>
+                      </div>
+
+                      <h3 className="font-serif text-base md:text-lg font-bold text-amber-100 group-hover:text-amber-300 transition-colors leading-snug">
+                        {art.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                        {art.content.replace(/[#*`]/g, "")}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-300">{art.author || "Vedanga AI"}</span>
+                        <span>•</span>
+                        <span className="text-amber-400 font-semibold">{art.readTime || "7 min read"}</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedArticleModal(art);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 group-hover:bg-amber-500 text-amber-300 group-hover:text-slate-950 border border-amber-500/30 font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Read Post</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1: DAILY JYOTISH LESSON */}
       {activeSection === "lesson" && (

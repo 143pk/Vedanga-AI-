@@ -1,16 +1,14 @@
 import React from "react";
-import { Sparkles, Moon, User, LogOut, Compass, Star } from "lucide-react";
+import { Sparkles, Compass, User } from "lucide-react";
 import { UserProfile } from "../types";
 
 interface HeaderProps {
   user: UserProfile;
   onOpenProfile: () => void;
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile, onLogout }) => {
-  const isSubscribed = user.isSubscribed || (typeof localStorage !== "undefined" && localStorage.getItem(`vedanga_sub_${user.email}`) === "true");
-
+export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile }) => {
   return (
     <header className="sticky top-0 z-30 bg-slate-950/85 backdrop-blur-md border-b border-amber-500/20 px-4 py-3">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -34,13 +32,6 @@ export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile, onLogout })
 
         {/* User Badge & Controls */}
         <div className="flex items-center space-x-2">
-          {isSubscribed && (
-            <div className="hidden md:flex items-center space-x-1 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
-              <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
-              <span>VIP Member</span>
-            </div>
-          )}
-
           {/* Location / Profile Badge */}
           <button
             onClick={onOpenProfile}
@@ -61,15 +52,6 @@ export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile, onLogout })
               <User className="w-3 h-3" />
             </div>
             <span className="max-w-[100px] truncate">{user.name}</span>
-          </button>
-
-          {/* Logout */}
-          <button
-            onClick={onLogout}
-            title="Log out"
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>

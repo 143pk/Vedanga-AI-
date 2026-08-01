@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { LandingPage } from "./components/LandingPage";
-import { OtpAuth } from "./components/OtpAuth";
 import { Header } from "./components/Header";
 import { BottomBarNav } from "./components/BottomBarNav";
 import { GuruChat } from "./components/GuruChat";
@@ -10,109 +9,49 @@ import { HoroscopeView } from "./components/HoroscopeView";
 import { KundliMatchingView } from "./components/KundliMatchingView";
 import { LearningView } from "./components/LearningView";
 import { ProfileModal } from "./components/ProfileModal";
-import { AdminLogin } from "./components/admin/AdminLogin";
-import { AdminLayout } from "./components/admin/AdminLayout";
 import { ActiveTab, UserProfile } from "./types";
 import { saveUserProfileToFirestore, getUserProfileFromFirestore } from "./lib/firebase";
 
+const DEFAULT_USER: UserProfile = {
+  id: "seeker_default",
+  email: "seeker@vedanga.ai",
+  name: "Seeker",
+  dob: "1995-01-01",
+  tob: "08:30",
+  pob: "New Delhi, India (28.6139° N, 77.2090° E)",
+  gender: "Male",
+};
+
 export default function App() {
-  const [viewState, setViewState] = useState<"landing" | "auth" | "app" | "admin">("landing");
+  const [viewState, setViewState] = useState<"landing" | "app">("app");
   const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile>(DEFAULT_USER);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Admin authentication state
-  const [adminToken, setAdminToken] = useState<string | null>(() => localStorage.getItem("vedanga_admin_token"));
-  const [adminUser, setAdminUser] = useState<any>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("vedanga_admin_user") || "null");
-    } catch {
-      return null;
-    }
-  });
-
-  // Load saved session on mount & check for /admin path
+  // Load saved session on mount if available
   useEffect(() => {
-    if (window.location.pathname === "/admin" || window.location.hash === "#admin") {
-      setViewState("admin");
-    } else {
-      const savedUser = localStorage.getItem("vedanga_user") || localStorage.getItem("astroguru_user");
-      if (savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser);
-          if (parsed && parsed.email) {
-            setUser(parsed);
-            setViewState("app");
+    const savedUser = localStorage.getItem("vedanga_user") || localStorage.getItem("astroguru_user");
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.email) {
+          setUser(parsed);
 
-            // Sync from Firebase Firestore
-            getUserProfileFromFirestore(parsed.email)
-              .then((remoteUser) => {
-                if (remoteUser) {
-                  setUser(remoteUser);
-                  localStorage.setItem("vedanga_user", JSON.stringify(remoteUser));
-                }
-              })
-              .catch((err) => console.error("Firebase profile fetch failed:", err));
-          }
-        } catch (err) {
-          console.error("Failed to parse saved user", err);
+          // Sync from Firebase Firestore
+          getUserProfileFromFirestore(parsed.email)
+            .then((remoteUser) => {
+              if (remoteUser) {
+                setUser(remoteUser);
+                localStorage.setItem("vedanga_user", JSON.stringify(remoteUser));
+              }
+            })
+            .catch((err) => console.error("Firebase profile fetch failed:", err));
         }
+      } catch (err) {
+        console.error("Failed to parse saved user", err);
       }
     }
   }, []);
-
-  const handleAdminLoginSuccess = (token: string, admin: any) => {
-    setAdminToken(token);
-    setAdminUser(admin);
-    localStorage.setItem("vedanga_admin_token", token);
-    localStorage.setItem("vedanga_admin_user", JSON.stringify(admin));
-    setViewState("admin");
-  };
-
-  const handleAdminLogout = () => {
-    setAdminToken(null);
-    setAdminUser(null);
-    localStorage.removeItem("vedanga_admin_token");
-    localStorage.removeItem("vedanga_admin_user");
-  };
-
-  const handleExitAdmin = () => {
-    if (window.history.pushState) {
-      window.history.pushState({}, "", "/");
-    }
-    if (user) {
-      setViewState("app");
-    } else {
-      setViewState("landing");
-    }
-  };
-
-  const handleLoginComplete = (newUser: UserProfile) => {
-    setUser(newUser);
-    localStorage.setItem("vedanga_user", JSON.stringify(newUser));
-    setViewState("app");
-
-    // Save user profile to Firebase Firestore
-    saveUserProfileToFirestore(newUser).catch((err) =>
-      console.error("Error saving user to Firebase Firestore:", err)
-    );
-  };
-
-  const handleLogout = () => {
-    if (user?.email) {
-      localStorage.removeItem(`vedanga_sub_${user.email}`);
-      fetch("/api/payment/reset-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      }).catch(() => {});
-    }
-    localStorage.removeItem("vedanga_user");
-    localStorage.removeItem("astroguru_user");
-    localStorage.clear();
-    setUser(null);
-    setViewState("landing");
-  };
 
   const handleUpdateUser = (updatedUser: UserProfile) => {
     setUser(updatedUser);
@@ -127,7 +66,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500/30 selection:text-amber-200">
       <AnimatePresence mode="wait">
-        {/* 1. Landing Page */}
+        {/* 1. Landing Page (Optional view) */}
         {viewState === "landing" && (
           <motion.div
             key="landing"
@@ -136,28 +75,12 @@ export default function App() {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <LandingPage onStart={() => setViewState("auth")} />
+            <LandingPage onStart={() => setViewState("app")} />
           </motion.div>
         )}
 
-        {/* 2. OTP Based Email Login & Onboarding */}
-        {viewState === "auth" && (
-          <motion.div
-            key="auth"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
-            <OtpAuth
-              onLoginComplete={handleLoginComplete}
-              onBackToLanding={() => setViewState("landing")}
-            />
-          </motion.div>
-        )}
-
-        {/* 3. Main App View */}
-        {viewState === "app" && user && (
+        {/* 2. Main App View Direct Access */}
+        {viewState === "app" && (
           <motion.div
             key="app"
             initial={{ opacity: 0 }}
@@ -169,10 +92,9 @@ export default function App() {
             <Header
               user={user}
               onOpenProfile={() => setIsProfileOpen(true)}
-              onLogout={handleLogout}
             />
 
-            <main className="flex-1 pb-16 overflow-hidden">
+            <main className="flex-1 pb-16">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -202,32 +124,6 @@ export default function App() {
               onClose={() => setIsProfileOpen(false)}
               onUpdateUser={handleUpdateUser}
             />
-          </motion.div>
-        )}
-
-        {/* 4. Admin View */}
-        {viewState === "admin" && (
-          <motion.div
-            key="admin"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="min-h-screen bg-slate-950"
-          >
-            {adminToken ? (
-              <AdminLayout
-                token={adminToken}
-                adminUser={adminUser}
-                onLogout={handleAdminLogout}
-                onExitAdmin={handleExitAdmin}
-              />
-            ) : (
-              <AdminLogin
-                onLoginSuccess={handleAdminLoginSuccess}
-                onBackToApp={handleExitAdmin}
-              />
-            )}
           </motion.div>
         )}
       </AnimatePresence>

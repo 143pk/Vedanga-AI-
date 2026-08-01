@@ -100,11 +100,19 @@ export interface AshtakavargaData {
   signNames: string[];
 }
 
+export interface PratyantardashaItem {
+  planet: string;
+  startDate: string;
+  endDate: string;
+  isCurrent?: boolean;
+}
+
 export interface AntardashaItem {
   planet: string;
   startDate: string;
   endDate: string;
   isCurrent?: boolean;
+  pratyantardashas?: PratyantardashaItem[];
 }
 
 export interface DashaTimelineItem {
@@ -233,7 +241,10 @@ export interface KundliData {
   dashaPeriod: {
     currentMahadasha: string;
     currentAntardasha: string;
+    currentPratyantardasha?: string;
     endsOn: string;
+    activeAntardashaEndsOn?: string;
+    activePratyantardashaEndsOn?: string;
     effectSummary: string;
   };
   manglikStatus: {

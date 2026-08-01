@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Compass, Sparkles, RefreshCw, Star, ShieldCheck, Award, Layers, Calendar, Edit3, Clock, BarChart3, Activity, Flame, ShieldAlert, Zap, Cpu, Eye, Scale, CheckCircle2, HelpCircle, ListOrdered, Sun, Target, BookOpen } from "lucide-react";
 import { KundliData, UserProfile } from "../types";
+import { calculateVedicKundli } from "../lib/vedicCalculator";
 
 interface KundliViewProps {
   user: UserProfile;
@@ -92,7 +93,14 @@ const SOUTH_GRID_MAP: { rashiIndex: number; row: number; col: number }[] = [
 ];
 
 export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
-  const [kundli, setKundli] = useState<KundliData | null>(null);
+  const initialKundli = calculateVedicKundli(
+    user.dob || "1995-05-15",
+    user.tob || "08:30 AM",
+    user.pob || "New Delhi, India",
+    user.name || "Seeker"
+  );
+
+  const [kundli, setKundli] = useState<KundliData | null>(initialKundli);
   const [loading, setLoading] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<
     "chart" | "shodashvarga" | "planets" | "shadbala" | "ashtakavarga" | "dasha" | "transit" | "yogas" | "doshas" | "houses" | "remedies"
@@ -103,6 +111,7 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null);
   const [selectedDivCode, setSelectedDivCode] = useState<string>("D9");
   const [expandedMahadasha, setExpandedMahadasha] = useState<string | null>(null);
+  const [expandedAntardasha, setExpandedAntardasha] = useState<string | null>(null);
 
   const [showEditBirth, setShowEditBirth] = useState(false);
   const [editDob, setEditDob] = useState(user.dob || "1995-05-15");
@@ -110,16 +119,23 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
   const [editPob, setEditPob] = useState(user.pob || "New Delhi, India");
 
   const fetchKundli = async (dobOverride?: string, tobOverride?: string, pobOverride?: string) => {
-    setLoading(true);
+    const curDob = dobOverride || editDob;
+    const curTob = tobOverride || editTob;
+    const curPob = pobOverride || editPob;
+
+    // Immediately calculate locally for instant 0ms response
+    const calculated = calculateVedicKundli(curDob, curTob, curPob, user.name);
+    setKundli(calculated);
+
     try {
       const res = await fetch("/api/astrology/kundli-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: user.name,
-          dob: dobOverride || editDob,
-          tob: tobOverride || editTob,
-          pob: pobOverride || editPob,
+          dob: curDob,
+          tob: curTob,
+          pob: curPob,
           gender: user.gender,
         }),
       });
@@ -136,10 +152,14 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
   };
 
   useEffect(() => {
-    setEditDob(user.dob || "1995-05-15");
-    setEditTob(user.tob || "08:30 AM");
-    setEditPob(user.pob || "New Delhi, India");
-    fetchKundli(user.dob, user.tob, user.pob);
+    const d = user.dob || "1995-05-15";
+    const t = user.tob || "08:30 AM";
+    const p = user.pob || "New Delhi, India";
+    setEditDob(d);
+    setEditTob(t);
+    setEditPob(p);
+    setKundli(calculateVedicKundli(d, t, p, user.name));
+    fetchKundli(d, t, p);
   }, [user]);
 
   const handleApplyBirthEdit = () => {
@@ -281,8 +301,16 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
                 <span className="text-xs font-bold text-amber-300">{kundli.basics.nakshatra}</span>
               </div>
               <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Current Dasha</span>
-                <span className="text-xs font-bold text-amber-300">{kundli.dashaPeriod?.currentMahadasha}</span>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Current Dasha Hierarchy</span>
+                <span className="text-xs font-bold text-amber-300 block truncate">
+                  {kundli.dashaPeriod?.currentMahadasha}
+                </span>
+                {kundli.dashaPeriod?.currentAntardasha && (
+                  <span className="text-[10px] text-amber-400/90 block font-mono">
+                    AD: {kundli.dashaPeriod.currentAntardasha.replace(" Antardasha", "")}
+                    {kundli.dashaPeriod.currentPratyantardasha && ` • PAD: ${kundli.dashaPeriod.currentPratyantardasha.replace(" Pratyantardasha", "")}`}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -791,11 +819,63 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
           {/* TAB 6: Vimshottari & Yogini Dasha Timelines */}
           {activeSubTab === "dasha" && (
             <div className="space-y-4">
-              {/* Vimshottari Timeline with Expandable Antardashas */}
+              {/* Active Dasha Hierarchy Banner */}
+              {kundli.dashaPeriod && (
+                <div className="p-4 bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-slate-900 border border-amber-500/40 rounded-3xl shadow-xl space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" /> Current Active Dasha Hierarchy (Real-Time Precision)
+                    </span>
+                    <span className="text-[10px] text-slate-400 bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-slate-800 font-mono">
+                      Sidereal Lahiri Precision Ephemeris
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-xs">
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-amber-500/30">
+                      <span className="text-[10px] text-amber-400/80 uppercase tracking-wider block font-semibold">1. Mahadasha (Major Period)</span>
+                      <span className="font-bold text-amber-200 text-sm block mt-0.5">{kundli.dashaPeriod.currentMahadasha}</span>
+                      <span className="text-[10px] text-slate-400 block mt-1">
+                        Active Until: <strong className="text-amber-300 font-mono">{kundli.dashaPeriod.endsOn}</strong>
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-amber-500/30">
+                      <span className="text-[10px] text-amber-400/80 uppercase tracking-wider block font-semibold">2. Antardasha (Sub-period)</span>
+                      <span className="font-bold text-amber-200 text-sm block mt-0.5">{kundli.dashaPeriod.currentAntardasha}</span>
+                      {kundli.dashaPeriod.activeAntardashaEndsOn && (
+                        <span className="text-[10px] text-slate-400 block mt-1">
+                          Active Until: <strong className="text-amber-300 font-mono">{kundli.dashaPeriod.activeAntardashaEndsOn}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    {kundli.dashaPeriod.currentPratyantardasha && (
+                      <div className="bg-slate-950/80 p-3 rounded-2xl border border-amber-500/30">
+                        <span className="text-[10px] text-amber-400/80 uppercase tracking-wider block font-semibold">3. Pratyantardasha (Sub-sub)</span>
+                        <span className="font-bold text-amber-200 text-sm block mt-0.5">{kundli.dashaPeriod.currentPratyantardasha}</span>
+                        {kundli.dashaPeriod.activePratyantardashaEndsOn && (
+                          <span className="text-[10px] text-slate-400 block mt-1">
+                            Active Until: <strong className="text-amber-300 font-mono">{kundli.dashaPeriod.activePratyantardashaEndsOn}</strong>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-300 italic pt-1 border-t border-slate-800/60">
+                    "{kundli.dashaPeriod.effectSummary}"
+                  </p>
+                </div>
+              )}
+
+              {/* Vimshottari Timeline with Expandable Antardashas & Pratyantardashas */}
               <div className="p-4 bg-slate-900/80 border border-amber-500/30 rounded-3xl space-y-3">
-                <h3 className="font-serif text-sm font-bold text-amber-200 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-amber-400" /> Vimshottari Mahadasha & Antardasha Timeline
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-sm font-bold text-amber-200 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-amber-400" /> Full 120-Year Vimshottari Cycle (Exact Date & Time)
+                  </h3>
+                  <span className="text-[10px] text-slate-400 font-mono">120 Years Lifespan Model</span>
+                </div>
 
                 <div className="space-y-2 text-xs">
                   {kundli.vimshottariTimeline?.map((item) => {
@@ -803,10 +883,10 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
                     return (
                       <div
                         key={item.planet}
-                        className={`p-3 rounded-2xl border transition-all ${
+                        className={`p-3.5 rounded-2xl border transition-all ${
                           item.isCurrent
-                            ? "bg-amber-500/15 border-amber-400 ring-1 ring-amber-400/40"
-                            : "bg-slate-950 border-slate-800"
+                            ? "bg-amber-500/15 border-amber-400 ring-1 ring-amber-400/40 shadow-lg"
+                            : "bg-slate-950 border-slate-800 hover:border-slate-700"
                         }`}
                       >
                         <div
@@ -814,37 +894,102 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
                           className="flex items-center justify-between cursor-pointer"
                         >
                           <div>
-                            <span className="font-bold text-amber-300 text-sm">{item.planet} Mahadasha</span>
-                            <span className="text-[10px] text-slate-400 block mt-0.5">
-                              {item.startDate} to {item.endDate} ({item.durationYears} Years)
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-amber-300 text-sm">{item.planet} Mahadasha</span>
+                              <span className="text-[10px] text-slate-400 font-mono">({item.durationYears} Years)</span>
+                            </div>
+                            <span className="text-[11px] text-slate-300 block mt-0.5 font-mono">
+                              {item.startDate} ➔ {item.endDate}
                             </span>
                           </div>
                           <div className="flex items-center space-x-2">
                             {item.isCurrent && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase">
-                                CURRENT MAHADASHA
+                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
+                                ACTIVE MAHADASHA
                               </span>
                             )}
-                            <span className="text-slate-400 text-xs">{isExpanded ? "▲ Hide" : "▼ Sub-periods"}</span>
+                            <span className="text-slate-400 text-xs font-semibold hover:text-amber-300">
+                              {isExpanded ? "▲ Hide Sub-periods" : "▼ View Antardashas"}
+                            </span>
                           </div>
                         </div>
 
                         {/* Antardashas List */}
                         {isExpanded && item.antardashas && (
-                          <div className="mt-3 pt-3 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 animate-fade-in">
-                            {item.antardashas.map((ad) => (
-                              <div
-                                key={ad.planet}
-                                className={`p-2 rounded-xl text-[10px] border ${
-                                  ad.isCurrent
-                                    ? "bg-amber-500/30 border-amber-400 text-amber-200 font-bold"
-                                    : "bg-slate-900 border-slate-800 text-slate-300"
-                                }`}
-                              >
-                                <div>{item.planet} - {ad.planet}</div>
-                                <div className="text-[9px] text-slate-400 font-mono">{ad.startDate} to {ad.endDate}</div>
-                              </div>
-                            ))}
+                          <div className="mt-3 pt-3 border-t border-slate-800 space-y-2.5 animate-fade-in">
+                            <div className="text-[11px] font-bold text-amber-300/90 flex items-center justify-between">
+                              <span>Sub-periods (Antardashas under {item.planet} Mahadasha)</span>
+                              <span className="text-[10px] text-slate-400 font-normal italic">
+                                Click any Antardasha to view Pratyantardashas (Sub-sub periods)
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                              {item.antardashas.map((ad) => {
+                                const adKey = `${item.planet}-${ad.planet}`;
+                                const isAdExpanded = expandedAntardasha === adKey;
+                                return (
+                                  <div
+                                    key={ad.planet}
+                                    className={`p-2.5 rounded-xl text-xs border transition-all ${
+                                      ad.isCurrent
+                                        ? "bg-amber-500/25 border-amber-400 text-amber-100 font-medium ring-1 ring-amber-400/50 shadow"
+                                        : "bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-700"
+                                    }`}
+                                  >
+                                    <div
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedAntardasha(isAdExpanded ? null : adKey);
+                                      }}
+                                      className="cursor-pointer flex items-center justify-between"
+                                    >
+                                      <div>
+                                        <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                                          <span>{item.planet} - {ad.planet}</span>
+                                          {ad.isCurrent && (
+                                            <span className="text-[9px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-bold uppercase">
+                                              ACTIVE AD
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="text-[10px] text-slate-300 mt-1 font-mono">{ad.startDate} ➔ {ad.endDate}</div>
+                                      </div>
+                                      <span className="text-[10px] text-amber-400/90 font-bold ml-1 hover:underline">
+                                        {isAdExpanded ? "▲" : "▼ Sub-sub"}
+                                      </span>
+                                    </div>
+
+                                    {/* Pratyantardashas (Sub-sub periods) */}
+                                    {isAdExpanded && ad.pratyantardashas && (
+                                      <div className="mt-2.5 pt-2 border-t border-slate-800 space-y-1.5 animate-fade-in">
+                                        <div className="text-[10px] font-bold text-purple-300 uppercase tracking-wider">
+                                          Pratyantardashas (Exact Timing):
+                                        </div>
+                                        <div className="space-y-1 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
+                                          {ad.pratyantardashas.map((pad, pIdx) => (
+                                            <div
+                                              key={pIdx}
+                                              className={`p-1.5 rounded-lg text-[10px] flex items-center justify-between border ${
+                                                pad.isCurrent
+                                                  ? "bg-amber-400/30 border-amber-400 text-amber-100 font-bold"
+                                                  : "bg-slate-950/80 border-slate-800/60 text-slate-400"
+                                              }`}
+                                            >
+                                              <span className="font-semibold text-slate-200">
+                                                {item.planet}-{ad.planet}-{pad.planet}
+                                              </span>
+                                              <span className="font-mono text-[9px] text-slate-300">
+                                                {pad.startDate} ➔ {pad.endDate}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>

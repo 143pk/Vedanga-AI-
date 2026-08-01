@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, User, RefreshCw, Volume2, VolumeX, ShieldCheck, Star, Lightbulb, Lock, CheckCircle2, Smartphone, Shield, ArrowRight, X, QrCode, Copy, Check, ExternalLink, AlertCircle, Zap, RotateCcw } from "lucide-react";
+import { Sparkles, Send, User, RefreshCw, Volume2, VolumeX, Lightbulb, RotateCcw, Lock, ShieldCheck, Zap } from "lucide-react";
 import { ChatMessage, UserProfile } from "../types";
 import { saveChatMessageToFirestore, getChatHistoryFromFirestore } from "../lib/firebase";
 
@@ -23,34 +23,51 @@ const DEFAULT_WELCOME_MSG: ChatMessage = {
   timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
 };
 
-export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
-  // Check localStorage and backend status for subscription state
-  const [isSubscribed, setIsSubscribed] = useState<boolean>(() => {
-    if (user.isSubscribed) return true;
-    const stored = localStorage.getItem(`vedanga_sub_${user.email}`);
-    return stored === "true";
-  });
+// Check if user is the admin/owner (optionvortex@gmail.com) for unlimited access
+const isUnlimitedUser = (email?: string): boolean => {
+  if (!email) return false;
+  const cleanEmail = email.toLowerCase().trim();
+  return (
+    cleanEmail === "optionvortex@gmail.com" ||
+    cleanEmail.includes("optionvortex") ||
+    cleanEmail === "seeker@vedanga.ai" ||
+    cleanEmail.endsWith("@vedanga.ai")
+  );
+};
 
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [activeUpiTab, setActiveUpiTab] = useState<"qr" | "intent" | "utr">("qr");
+// Daily Question Count Helper using localStorage
+const getTodayDateStr = () => new Date().toISOString().split("T")[0];
 
-  // Custom UPI Order state from server
-  const [orderData, setOrderData] = useState<{
-    orderId: string;
-    upiId: string;
-    upiName: string;
-    amount: number;
-    upiUri: string;
-    qrDataUri: string;
-  } | null>(null);
+const getDailyQuestionCount = (email?: string): number => {
+  try {
+    const key = `vedanga_daily_q_count_${email || "guest"}`;
+    const stored = localStorage.getItem(key);
+    if (!stored) return 0;
+    const data = JSON.parse(stored);
+    if (data.date === getTodayDateStr()) {
+      return Number(data.count) || 0;
+    }
+    return 0; // Reset for a new day
+  } catch (e) {
+    return 0;
+  }
+};
 
-  const [utrInput, setUtrInput] = useState("");
-  const [copiedUpi, setCopiedUpi] = useState(false);
-  const [orderLoading, setOrderLoading] = useState(false);
-  const [verifyingPayment, setVerifyingPayment] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
+const incrementDailyQuestionCount = (email?: string): number => {
+  try {
+    const key = `vedanga_daily_q_count_${email || "guest"}`;
+    const today = getTodayDateStr();
+    const current = getDailyQuestionCount(email);
+    const updated = current + 1;
+    localStorage.setItem(key, JSON.stringify({ date: today, count: updated }));
+    return updated;
+  } catch (e) {
+    console.error("Failed to increment question count:", e);
+    return 1;
+  }
+};
 
+export const GuruChat: React.FC<GuruChatProps> = ({ user }) => {
   // Chat Memory Persistence in localStorage per user
   const chatStorageKey = `vedanga_chat_history_${user.email || "guest"}`;
 
@@ -73,6 +90,11 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
   const [loading, setLoading] = useState(false);
   const [audioActive, setAudioActive] = useState(false);
 
+  // Daily Question Count State
+  const isUnlimited = isUnlimitedUser(user.email);
+  const [dailyCount, setDailyCount] = useState<number>(() => getDailyQuestionCount(user.email));
+  const MAX_DAILY_QUESTIONS = 5;
+
   // Save messages to localStorage whenever chat history updates
   useEffect(() => {
     try {
@@ -91,147 +113,6 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
-
-  // Sync subscription status with backend on mount
-  useEffect(() => {
-    if (user.email) {
-      fetch(`/api/payment/status?email=${encodeURIComponent(user.email)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.isSubscribed) {
-            setIsSubscribed(true);
-            localStorage.setItem(`vedanga_sub_${user.email}`, "true");
-            if (onUpdateUser && !user.isSubscribed) {
-              onUpdateUser({ ...user, isSubscribed: true });
-            }
-          }
-        })
-        .catch(() => {});
-    }
-  }, [user.email]);
-
-  // Real-time Auto-Approval Polling when Payment Modal is Open
-  useEffect(() => {
-    if (!showPaymentModal || !orderData || isSubscribed || paymentSuccess) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/payment/check-order?orderId=${orderData.orderId}&email=${encodeURIComponent(user.email)}`);
-        const data = await res.json();
-
-        if (data.status === "success" || data.isSubscribed) {
-          clearInterval(interval);
-          setPaymentSuccess(true);
-          setIsSubscribed(true);
-          localStorage.setItem(`vedanga_sub_${user.email}`, "true");
-          if (onUpdateUser) {
-            onUpdateUser({ ...user, isSubscribed: true });
-          }
-          setTimeout(() => {
-            setShowPaymentModal(false);
-            setPaymentSuccess(false);
-          }, 1800);
-        }
-      } catch (err) {
-        console.warn("Auto-polling error:", err);
-      }
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, [showPaymentModal, orderData, isSubscribed, paymentSuccess, user.email]);
-
-  // Auto-fetch order when modal is visible but orderData is missing
-  useEffect(() => {
-    if (showPaymentModal && !orderData && !orderLoading) {
-      handleOpenPaymentModal();
-    }
-  }, [showPaymentModal, orderData, orderLoading]);
-
-  // Create custom UPI order when opening modal
-  const handleOpenPaymentModal = async () => {
-    setShowPaymentModal(true);
-    setPaymentError(null);
-    setOrderLoading(true);
-    try {
-      const res = await fetch("/api/payment/create-upi-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setOrderData(data);
-      } else {
-        setPaymentError(data.error || "Failed to create UPI order.");
-      }
-    } catch {
-      setPaymentError("Network error initializing UPI order.");
-    } finally {
-      setOrderLoading(false);
-    }
-  };
-
-  // Handle Copy Merchant UPI VPA
-  const handleCopyUpi = () => {
-    if (orderData?.upiId) {
-      navigator.clipboard.writeText(orderData.upiId);
-      setCopiedUpi(true);
-      setTimeout(() => setCopiedUpi(false), 2000);
-    }
-  };
-
-  // Verify custom UPI payment via UTR / Ref Code
-  const handleVerifyUpiPayment = async (customUtr?: string) => {
-    if (!orderData) return;
-    setVerifyingPayment(true);
-    setPaymentError(null);
-
-    try {
-      const res = await fetch("/api/payment/verify-upi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: orderData.orderId,
-          email: user.email,
-          utrCode: customUtr || utrInput,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success && data.isSubscribed) {
-        setPaymentSuccess(true);
-        setIsSubscribed(true);
-        localStorage.setItem(`vedanga_sub_${user.email}`, "true");
-        if (onUpdateUser) {
-          onUpdateUser({ ...user, isSubscribed: true });
-        }
-        setTimeout(() => {
-          setShowPaymentModal(false);
-          setPaymentSuccess(false);
-        }, 1800);
-      } else {
-        setPaymentError(data.error || "Verification failed. Please check your UTR code.");
-      }
-    } catch {
-      setPaymentError("Failed to verify payment with custom gateway. Please try again.");
-    } finally {
-      setVerifyingPayment(false);
-    }
-  };
-
-  // Instant Bypass Access for Testing
-  const handleBypassAccess = () => {
-    setIsSubscribed(true);
-    setPaymentSuccess(true);
-    localStorage.setItem(`vedanga_sub_${user.email}`, "true");
-    if (onUpdateUser) {
-      onUpdateUser({ ...user, isSubscribed: true });
-    }
-    setTimeout(() => {
-      setShowPaymentModal(false);
-      setPaymentSuccess(false);
-    }, 500);
-  };
 
   // Reset Chat Memory
   const handleResetChat = () => {
@@ -253,13 +134,20 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
   };
 
   const handleSendMessage = async (textToSend?: string) => {
-    if (!isSubscribed) {
-      handleOpenPaymentModal();
-      return;
-    }
-
     const query = (textToSend || inputMsg).trim();
     if (!query || loading) return;
+
+    // Check Daily 5-Question Limit for non-unlimited users
+    if (!isUnlimited && dailyCount >= MAX_DAILY_QUESTIONS) {
+      const limitReachedMsg: ChatMessage = {
+        id: Date.now().toString(),
+        role: "guru",
+        content: "🌸 Hari Om dear seeker! You have reached your 5 free AI questions limit for today. You get 5 free questions every single day. Please come back tomorrow for fresh daily insights!",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, limitReachedMsg]);
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -271,6 +159,12 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
     setMessages((prev) => [...prev, userMessage]);
     setInputMsg("");
     setLoading(true);
+
+    // Increment question count for standard users
+    if (!isUnlimited) {
+      const newCount = incrementDailyQuestionCount(user.email);
+      setDailyCount(newCount);
+    }
 
     if (user.email) {
       saveChatMessageToFirestore(user.email, "user", query).catch(() => {});
@@ -331,6 +225,8 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
     }
   };
 
+  const remainingQuestions = Math.max(0, MAX_DAILY_QUESTIONS - dailyCount);
+
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] max-w-3xl mx-auto px-3 sm:px-4 py-2 font-sans relative">
       {/* Top Bar Banner */}
@@ -342,15 +238,23 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-xs font-bold text-amber-200">Vedanga AI Oracle</h3>
-              {isSubscribed ? (
-                <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300">
-                  <Star className="w-2.5 h-2.5 fill-amber-300" />
-                  VIP Plan (₹199/mo)
+              {isUnlimited ? (
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-sm">
+                  <ShieldCheck className="w-2.5 h-2.5 text-amber-400" />
+                  Admin VIP • Unlimited AI Access
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-300">
-                  <Lock className="w-2.5 h-2.5" />
-                  Requires Subscription (₹199/mo)
+                <span
+                  className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                    remainingQuestions > 0
+                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                      : "bg-rose-500/20 border-rose-500/40 text-rose-300"
+                  }`}
+                >
+                  <Sparkles className="w-2.5 h-2.5" />
+                  {remainingQuestions > 0
+                    ? `${remainingQuestions} / ${MAX_DAILY_QUESTIONS} Free Qs Today`
+                    : "0 / 5 Daily Free Qs Left"}
                 </span>
               )}
             </div>
@@ -361,16 +265,6 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
         </div>
 
         <div className="flex items-center space-x-2">
-          {!isSubscribed && (
-            <button
-              onClick={() => setShowPaymentModal(true)}
-              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs hover:scale-105 transition-all shadow-md cursor-pointer flex items-center space-x-1"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Unlock ₹199/mo</span>
-            </button>
-          )}
-
           <button
             onClick={() => setAudioActive(!audioActive)}
             className={`px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center space-x-1 transition-all cursor-pointer ${
@@ -460,52 +354,18 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* PAYWALL BANNER WHEN NOT SUBSCRIBED */}
-      {!isSubscribed && (
-        <div className="my-3 p-4 bg-gradient-to-r from-amber-950/70 via-slate-900 to-amber-950/70 border border-amber-500/40 rounded-2xl text-center backdrop-blur-md shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 px-3 py-1 bg-amber-500 text-slate-950 text-[10px] font-bold rounded-bl-xl uppercase tracking-wider">
-            VIP Subscription
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-            <div>
-              <div className="flex items-center space-x-2">
-                <Lock className="w-4 h-4 text-amber-400" />
-                <h4 className="font-serif text-sm font-bold text-amber-200">
-                  Unlock Unlimited 24/7 AI Kundli Chat — ₹199 / Month
-                </h4>
-              </div>
-              <p className="text-xs text-slate-300 mt-1">
-                Get instant, personalized guidance on career, marriage, Sade Sati, Dasha periods, and gemstones backed by exact Lahiri Ephemeris.
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-amber-300/90 font-medium">
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Unlimited Questions</span>
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Complete Chart Analysis</span>
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Cancel Anytime</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-              <button
-                onClick={handleOpenPaymentModal}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg hover:scale-105 transition-all cursor-pointer whitespace-nowrap flex items-center justify-center space-x-2"
-              >
-                <span>Subscribe @ ₹199/mo</span>
-                <ArrowRight className="w-4 h-4 text-slate-950" />
-              </button>
-              <button
-                onClick={handleBypassAccess}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 border border-emerald-500/40 text-emerald-300 hover:bg-slate-700 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap flex items-center justify-center space-x-1"
-              >
-                <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Bypass / Free Access</span>
-              </button>
-            </div>
-          </div>
+      {/* Daily Limit Warning Banner for standard users when 5/5 reached */}
+      {!isUnlimited && dailyCount >= MAX_DAILY_QUESTIONS && (
+        <div className="my-2 p-3 bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-500/40 rounded-2xl text-center backdrop-blur-md shadow-lg flex items-center justify-center gap-2">
+          <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="text-xs font-semibold text-amber-200">
+            You've asked 5/5 free questions today! Your 5 free questions reset tomorrow.
+          </span>
         </div>
       )}
 
       {/* Suggested Quick Prompt Chips */}
-      {messages.length < 3 && !loading && (
+      {messages.length < 3 && !loading && (isUnlimited || dailyCount < MAX_DAILY_QUESTIONS) && (
         <div className="py-2">
           <div className="text-[10px] uppercase font-bold text-amber-400 tracking-wider mb-1.5 flex items-center space-x-1">
             <Lightbulb className="w-3 h-3" />
@@ -536,151 +396,31 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user, onUpdateUser }) => {
         <div className="relative flex items-center">
           <input
             type="text"
-            placeholder={isSubscribed ? "Ask about love, job, Sade Sati, Kundli remedies..." : "Subscribe for ₹199/mo to start chatting with AI Guru..."}
+            placeholder={
+              !isUnlimited && dailyCount >= MAX_DAILY_QUESTIONS
+                ? "Daily limit reached (5/5). Resets tomorrow..."
+                : "Ask about love, job, Sade Sati, Kundli remedies..."
+            }
             value={inputMsg}
             onChange={(e) => setInputMsg(e.target.value)}
-            disabled={loading}
-            className="w-full bg-slate-900/90 border border-amber-500/30 focus:border-amber-400 rounded-2xl py-3.5 pl-4 pr-12 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none shadow-xl transition-all"
+            disabled={loading || (!isUnlimited && dailyCount >= MAX_DAILY_QUESTIONS)}
+            className="w-full bg-slate-900/90 border border-amber-500/30 focus:border-amber-400 rounded-2xl py-3.5 pl-4 pr-12 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none shadow-xl transition-all disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (!isUnlimited && dailyCount >= MAX_DAILY_QUESTIONS)}
             className="absolute right-2 p-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold hover:scale-105 disabled:opacity-40 transition-all cursor-pointer"
           >
-            {isSubscribed ? <Send className="w-4 h-4 text-slate-950" /> : <Lock className="w-4 h-4 text-slate-950" />}
+            {!isUnlimited && dailyCount >= MAX_DAILY_QUESTIONS ? (
+              <Lock className="w-4 h-4 text-slate-950" />
+            ) : (
+              <Send className="w-4 h-4 text-slate-950" />
+            )}
           </button>
         </div>
       </form>
-
-      {/* Vedanga AI PAYMENT MODAL */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 font-sans animate-fade-in">
-          <div className="w-full max-w-sm bg-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-2xl relative text-center">
-            <button
-              onClick={() => setShowPaymentModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-amber-300 transition-colors p-1 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Vedanga AI Heading */}
-            <div className="flex items-center justify-center space-x-2 mb-1">
-              <Sparkles className="w-5 h-5 text-amber-300" />
-              <h3 className="font-serif text-2xl font-bold text-amber-200">
-                Vedanga AI
-              </h3>
-            </div>
-            <p className="text-xs text-slate-400">Scan QR Code to activate AI Chat</p>
-
-            {/* Payment Success State */}
-            {paymentSuccess ? (
-              <div className="py-8 animate-fade-in">
-                <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto mb-3 animate-bounce" />
-                <h4 className="font-serif text-lg font-bold text-amber-200">Payment Received!</h4>
-                <p className="text-xs text-slate-300 mt-1">
-                  Your Vedanga AI Subscription is now Active!
-                </p>
-              </div>
-            ) : orderLoading ? (
-              <div className="py-12">
-                <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mx-auto mb-3" />
-                <p className="text-xs text-amber-200 font-medium">Generating your unique QR Code...</p>
-              </div>
-            ) : (
-              <div className="mt-5 space-y-4">
-                {/* Micro Amount Highlight Box */}
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
-                  <span className="text-[10px] text-amber-300 uppercase tracking-widest font-semibold block">
-                    Pay Exact Micro Amount
-                  </span>
-                  <div className="text-3xl font-extrabold font-mono text-amber-200 mt-0.5">
-                    ₹{orderData?.amount ? Number(orderData.amount).toFixed(2) : "199.15"}
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Pay exact micro-amount (including paise) for instant automatic activation
-                  </p>
-                </div>
-
-                {/* QR Code */}
-                <div className="bg-white p-3 rounded-2xl shadow-xl border border-amber-500/40 inline-block mx-auto">
-                  {orderData?.qrDataUri || orderData?.upiUri ? (
-                    <img
-                      src={
-                        orderData?.qrDataUri ||
-                        `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(orderData.upiUri)}`
-                      }
-                      alt="Vedanga AI Payment QR"
-                      className="w-48 h-48 object-contain mx-auto"
-                      onError={(e) => {
-                        if (orderData?.upiUri) {
-                          (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(orderData.upiUri)}`;
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="w-48 h-48 bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-medium">
-                      <RefreshCw className="w-5 h-5 text-amber-500 animate-spin mr-2" />
-                      Loading QR Code...
-                    </div>
-                  )}
-                </div>
-
-                {/* Subtext */}
-                <p className="text-xs text-slate-300 font-medium">
-                  Scan with Google Pay, PhonePe, Paytm, or BHIM
-                </p>
-
-                {/* Quick UPI Intent Link & VPA Copy */}
-                {orderData?.upiUri && (
-                  <div className="pt-1 space-y-2">
-                    <a
-                      href={orderData.upiUri}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-center"
-                    >
-                      <Smartphone className="w-4 h-4 text-slate-950" />
-                      <span>Open UPI App Directly</span>
-                    </a>
-
-                    <div className="flex items-center justify-between text-[11px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5">
-                      <span className="text-slate-400 font-mono truncate max-w-[200px]">{orderData.upiId}</span>
-                      <button
-                        type="button"
-                        onClick={handleCopyUpi}
-                        className="text-amber-300 hover:text-amber-200 font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                      >
-                        {copiedUpi ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedUpi ? "Copied" : "Copy VPA"}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Auto Verification Pulse */}
-                <div className="flex items-center justify-center space-x-2 pt-1 text-[11px] text-emerald-400 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>Waiting for payment... Auto-activates on transfer</span>
-                </div>
-
-                {/* Instant Bypass Button for Testing */}
-                <div className="pt-2 border-t border-slate-800/80">
-                  <button
-                    type="button"
-                    onClick={handleBypassAccess}
-                    className="w-full py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
-                  >
-                    <Zap className="w-4 h-4 text-emerald-400" />
-                    <span>⚡ Instant Bypass / Free Test Access</span>
-                  </button>
-                  <p className="text-[10px] text-slate-400 mt-1 text-center">
-                    Click to unlock full chat features immediately for testing
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
 

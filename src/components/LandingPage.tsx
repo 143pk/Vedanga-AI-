@@ -49,9 +49,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
         <button
           onClick={onStart}
-          className="px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider text-amber-200 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition-all duration-300 shadow-md flex items-center space-x-2"
+          className="px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider text-amber-200 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition-all duration-300 shadow-md flex items-center space-x-2 cursor-pointer"
         >
-          <span>Sign In / OTP</span>
+          <span>Explore App</span>
           <ArrowRight className="w-3.5 h-3.5 text-amber-300" />
         </button>
       </header>
@@ -84,7 +84,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 font-bold text-sm tracking-wider shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-3 cursor-pointer"
           >
             <Sparkles className="w-5 h-5 text-slate-950" />
-            <span>Consult Guru with OTP Email</span>
+            <span>Consult AI Guru Now</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -154,18 +154,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             className="text-slate-400 hover:text-amber-400 transition-colors"
           >
             Robots.txt
-          </a>
-          <span>•</span>
-          <a
-            href="/admin"
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.hash = "admin";
-              window.location.reload();
-            }}
-            className="text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
-          >
-            Admin Panel
           </a>
         </div>
         <p>© {new Date().getFullYear()} Vedanga AI. Guided by Vedic Wisdom & Gemini GenAI.</p>

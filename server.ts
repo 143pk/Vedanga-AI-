@@ -850,7 +850,7 @@ Provide response strictly in valid JSON format with the following fields:
   }
 });
 
-// Deep Kundli Analysis
+// Deep Kundli Analysis (Instant Sidereal Lahiri Calculation)
 app.post("/api/astrology/kundli-analysis", async (req, res) => {
   try {
     const { name, dob, tob, pob, gender } = req.body;
@@ -861,7 +861,7 @@ app.post("/api/astrology/kundli-analysis", async (req, res) => {
       return res.json({ success: true, kundli: kundliCache.get(cacheKey)!.data });
     }
 
-    // Always compute real astronomical Sidereal Lahiri Kundli as baseline
+    // Compute real astronomical Sidereal Lahiri Kundli instantly
     const calculatedKundli = calculateVedicKundli(
       dob || "1995-05-15",
       tob || "08:30 AM",
@@ -869,61 +869,8 @@ app.post("/api/astrology/kundli-analysis", async (req, res) => {
       name || "Seeker"
     );
 
-    const ai = getGeminiClient();
-
-    const prompt = `You are a high-precision Vedic Astrology (Jyotish) Sidereal Ephemeris Engine.
-Perform an authentic, mathematically precise Vedic Natal Chart (Kundli) calculation using Sidereal Lahiri Ayanamsa for the following birth details:
-- Name: ${name || "Seeker"}
-- Date of Birth: ${dob || "1995-05-15"}
-- Time of Birth: ${tob || "08:30 AM"}
-- Place of Birth: ${pob || "New Delhi, India"}
-- Gender: ${gender || "unspecified"}
-
-CALCULATION INSTRUCTIONS:
-1. Compute the exact Sidereal Ascendant (Lagna) sign based on the exact birth date, time, and timezone/location of birth place.
-2. Determine Moon Sign (Rashi), Sun Sign, Nakshatra name, and Nakshatra Pada (1-4).
-3. Determine the exact house placement (1 to 12) and sign for all 9 Grahas (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu), where House 1 is the Lagna sign.
-4. Calculate degrees within sign and dignity for each planet.
-5. Provide detailed analysis for ALL 12 houses.
-6. Evaluate Manglik Dosha accurately based on Mars house placement.
-7. List real Vedic Raj Yogas or Dhana Yogas formed by planetary combinations in this specific chart.
-8. Calculate Vimshottari Mahadasha and Antardasha active as of today.
-
-Return STRICTLY valid JSON matching the exact structure:
-${JSON.stringify(calculatedKundli, null, 2)}`;
-
-    let data: any = calculatedKundli;
-    try {
-      const rawText = await generateGeminiContentWithFallback(ai, {
-        prompt,
-        jsonOutput: true,
-        temperature: 0.2,
-      });
-      const aiData = JSON.parse(rawText || "{}");
-      if (aiData && aiData.housesAnalysis) {
-        const mergedHouses = calculatedKundli.housesAnalysis.map((h, i) => {
-          const aiHouse = aiData.housesAnalysis?.[i];
-          return {
-            ...h,
-            summary: aiHouse?.summary || h.summary,
-          };
-        });
-
-        data = {
-          ...calculatedKundli,
-          housesAnalysis: mergedHouses,
-          yogas: aiData.yogas && Array.isArray(aiData.yogas) ? aiData.yogas : calculatedKundli.yogas,
-          dashaPeriod: aiData.dashaPeriod || calculatedKundli.dashaPeriod,
-          remedies: aiData.remedies || calculatedKundli.remedies,
-        };
-      }
-    } catch (err) {
-      console.warn(`[FALLBACK] Serving exact calculated Sidereal Kundli for ${name}`);
-      data = calculatedKundli;
-    }
-
-    kundliCache.set(cacheKey, { data, timestamp: Date.now() });
-    return res.json({ success: true, kundli: data });
+    kundliCache.set(cacheKey, { data: calculatedKundli, timestamp: Date.now() });
+    return res.json({ success: true, kundli: calculatedKundli });
   } catch (err: any) {
     console.error("Error in /api/astrology/kundli-analysis:", err);
     return res.status(500).json({ error: "Failed to generate Kundli analysis." });
@@ -1109,36 +1056,340 @@ let adminSubscriptionPlans = [
 
 let cmsArticlesStore = [
   {
+    id: "art_today_1",
+    title: "Daily Cosmic Transit & Rahu-Ketu Alignment Today: 12-Rashi Insights & Remedies",
+    category: "Transits",
+    author: "Vedanga AI Daily Engine",
+    readTime: "7 min read • Master Guide",
+    content: `### 🌟 Executive Cosmic Summary & Panchang Overview
+
+Today's planetary configuration brings a potent shift in cosmic frequencies across the zodiacal belt. The Moon enters a highly receptive Nakshatra under the aspect of expansive Jupiter (Guru Graha), creating an auspicious environment for mental clarity, spiritual contemplation, and strategic long-term decisions.
+
+When the Moon aligns harmoniously with benefic forces, the subtlest channels of human consciousness (Nadis) become highly attuned to higher intuition. However, with Rahu and Ketu occupying key nodal positions in the sky, underlying psychological undercurrents can create sudden bursts of ambition mixed with moments of unexpected detachment.
+
+---
+
+### 🔮 Deep Planetary Mechanics & Parashari Principles
+
+In Classical Parashari Jyotish, planetary transits (Gochar) act as cosmic timing levers that trigger the latent karmic seeds stored within your birth natal chart (Janma Kundli). 
+
+1. **The Moon-Jupiter Aspect (Guru-Chandra Drishti)**: 
+   Jupiter represents the supreme principle of Dharma, expansion, higher knowledge, and divine grace. When Jupiter aspects the transiting Moon, it bestows emotional resilience, ethical clarity, and wisdom. This is one of the most favorable planetary combinations to initiate financial planning, sign contracts, or seek spiritual initiation (Mantra Deeksha).
+
+2. **The Rahu-Ketu Shadow Axis**:
+   Rahu represents future karmic growth, insatiable worldly curiosity, and technological innovation. Ketu represents past-life mastery, intense analytical detachment, and spiritual liberation (Moksha). Today's nodal alignment encourages us to balance outward practical pursuits with inward meditative reflection.
+
+3. **Saturn's Steadying Presence (Shani Dev Strength)**:
+   Saturn demands truth, discipline, and patience. Avoid rushing into unverified commitments during Rahu Kaal today. Shani rewards those who practice systematic effort and humble dedication to duty.
+
+---
+
+### 🪐 Comprehensive Impact Across All 12 Rashis (Zodiac Signs)
+
+- **Fire Signs (Aries, Leo, Sagittarius)**: Exceptional energy for creative leadership and career advancements. Focus on channeled action rather than impulsive confrontation.
+- **Earth Signs (Taurus, Virgo, Capricorn)**: High financial stability and material focus. Ideal day for investments, contract reviews, and real estate deliberations.
+- **Air Signs (Gemini, Libra, Aquarius)**: Sharp intellectual curiosity, networking gains, and communicative breakthroughs. Excellent for writing, teaching, and tech work.
+- **Water Signs (Cancer, Scorpio, Pisces)**: Heightened intuitive power and emotional depth. Dedicate time to meditation, water offerings, and family harmony.
+
+---
+
+### 🕉️ Authentic Vedic Remedies & Daily Practice Protocol
+
+To maximize today's positive vibrations and neutralize any malefic nodal friction:
+
+1. **Surya Arghya at Sunrise**: Offer fresh water mixed with red flowers and a pinch of kumkum to Sun God (Surya Dev) while chanting:
+   *\`"Om Hram Hreem Hroum Sah Suryaya Namah"\`* (11 times).
+2. **Mahamrityunjaya Mantra Japa**: Recite 108 repetitions of the Mahamrityunjaya Mantra during evening twilight to dissolve anxiety and fortify physical immunity.
+3. **Saturn-Rahu Charity (Dana)**: Donate black sesame seeds, whole black gram (Urad Dal), or warm blankets to needy persons.
+
+---
+
+### 🧘 Daily Reflection & Contemplation
+
+*"The planetary transits do not dictate a fixed fate; they reveal the weather of time. With conscious awareness, spiritual sadhana, and right action (Purushartha), you remain the master of your soul's journey."*`,
+    status: "Published",
+    isAutoGenerated: true,
+    trendingTopic: "Daily Panchang & Transit Alignment",
+    updatedAt: new Date().toISOString().split("T")[0]
+  },
+  {
     id: "art_1",
-    title: "Understanding the 12 Houses in Vedic Astrology",
+    title: "Understanding the 12 Houses (Bhavas) in Vedic Astrology: The Complete Architecture of Life",
     category: "Houses",
     author: "Acharya Vedanga",
-    readTime: "6 min",
-    content: "In Vedic Astrology (Jyotish), the horoscope is divided into 12 houses (Bhavas). Each house represents specific areas of human existence, from self-identity (1st house) to ultimate liberation or Moksha (12th house).",
+    readTime: "8 min read • Master Guide",
+    content: `### 🏛️ The Sacred Geometry of the 12 Bhavas
+
+In Vedic Astrology (Jyotish Shastra), the natal birth chart is a sacred mandala divided into 12 distinct segments called **Bhavas** (Houses). Each Bhava governs a specific dimension of human experience, ranging from physical body and self-identity in the 1st House to ultimate spiritual liberation (Moksha) in the 12th House.
+
+Understanding the structural classification of houses is the absolute foundation for analyzing any Kundli accurately.
+
+---
+
+### 📐 Functional Categorization of Houses
+
+#### 1. Kendra Houses (The Four Pillars of Action) — 1st, 4th, 7th, 10th Houses
+Known as **Vishnu Sthanas**, the Kendras represent physical existence, stability, and concrete action in the world.
+- **1st House (Lagna)**: Body, appearance, vitality, self-confidence, overall destiny.
+- **4th House (Sukha Bhava)**: Mother, home, mind, emotional peace, real estate, vehicles.
+- **7th House (Kalatra Bhava)**: Marriage partner, business alliances, public interactions.
+- **10th House (Karma Bhava)**: Profession, public status, authority, fame, career achievements.
+
+#### 2. Trikona Houses (The Sacred Triangles of Fortune) — 1st, 5th, 9th Houses
+Known as **Lakshmi Sthanas**, the Trikonas represent luck, divine grace, past-life merits (Purva Punya), and higher wisdom.
+- **1st House**: Acts as both a Kendra and a Trikona — the supreme bridge between action and grace.
+- **5th House (Putra/Buddhi Bhava)**: Creative intelligence, past-life good karma, mantle mantras, children, speculation.
+- **9th House (Dharma/Bhagya Bhava)**: Supreme fortune, Guru, father, higher spiritual learning, pilgrimages.
+
+#### 3. Dusthana Houses (Houses of Challenge & Alchemy) — 6th, 8th, 12th Houses
+Known as the houses of hardship, disease, obstacles, and transformation. However, well-placed planets here grant immense resilience and spiritual power.
+- **6th House (Ripu/Roga Bhava)**: Enemies, health challenges, debts, daily service, competitive victory.
+- **8th House (Ayu/Randhra Bhava)**: Longevity, sudden inheritance, occult research, deep psychological transformations.
+- **12th House (Vyaya/Moksha Bhava)**: Expenses, foreign lands, isolation, sleep, spiritual enlightenment.
+
+#### 4. Upachaya Houses (Houses of Growth) — 3rd, 6th, 10th, 11th Houses
+These houses improve steadily over time through effort and age. Malefic planets like Saturn, Mars, Rahu, and Sun thrive here.
+- **3rd House**: Courage, willpower, siblings, communication.
+- **11th House (Labha Bhava)**: Gains, wealth, fulfillment of desires, social network.
+
+---
+
+### 💡 How House Lords Interact in Your Kundli
+
+The magic of prediction happens when house lords exchange positions. For example:
+- If the **9th Lord (Fortune)** sits in the **10th House (Career)**, it forms a highest-order **Dharma-Karmadhipati Raja Yoga**, granting rapid professional elevation and ethical fame.
+- If the **1st Lord (Self)** sits in the **5th House (Wisdom)**, the native possesses deep natural intelligence, intuitive gifts, and love for sacred learning.
+
+---
+
+### 🕉️ Key Astrological Takeaways & Practice
+
+When reading your own chart, always observe which house holds the highest concentration of planets. That house represents your soul's primary focus in this incarnation!`,
     status: "Published",
     updatedAt: new Date().toISOString().split("T")[0]
   },
   {
     id: "art_2",
-    title: "Vimshottari Dasha: Decoding Your Cosmic Timing",
+    title: "Vimshottari Dasha Mechanics: Mastering the Master Timeline of Destiny & Life Events",
     category: "Dasha",
     author: "Acharya Vedanga",
-    readTime: "8 min",
-    content: "Vimshottari Dasha is the 120-year planetary dasha system used in Vedic astrology to predict major life events and transitions based on the Moon's nakshatra at birth.",
+    readTime: "9 min read • Comprehensive Analysis",
+    content: `### ⏳ The 120-Year Cosmic Clock of Human Life
+
+Among the dozens of dasha systems detailed by Maharishi Parashara in *Brihat Parashara Hora Shastra*, the **Vimshottari Dasha** is universally revered as the king of timing systems. 'Vimshottari' signifies 120 years, representing the ideal natural lifespan allotted to a human soul in Kali Yuga.
+
+Unlike solar or planetary transits that affect everyone simultaneously, your Vimshottari Dasha is entirely unique to you — calculated down to the exact degree and minute of your birth Moon's Nakshatra!
+
+---
+
+### 🪐 The 9 Planetary Dasha Durations
+
+Each planet governs a specific number of years in the 120-year cycle:
+1. **Ketu**: 7 Years (Spiritual detachment, sudden shifts)
+2. **Venus (Shukra)**: 20 Years (Relationships, arts, wealth, material comfort)
+3. **Sun (Surya)**: 6 Years (Authority, self-realization, career recognition)
+4. **Moon (Chandra)**: 10 Years (Emotional growth, public visibility, family)
+5. **Mars (Mangal)**: 7 Years (Energy, property, courage, technical skills)
+6. **Rahu**: 18 Years (Ambition, rapid expansion, foreign travels, innovation)
+7. **Jupiter (Guru)**: 16 Years (Wisdom, expansion, children, higher fortune)
+8. **Saturn (Shani)**: 19 Years (Discipline, hard work, patience, permanent foundation)
+9. **Mercury (Budh)**: 17 Years (Commerce, intellect, communication, learning)
+
+---
+
+### 🔬 The Three Nested Levels of Timing
+
+- **Maha Dasha (Major Period)**: Establishes the overarching climate and baseline theme of life for years.
+- **Antar Dasha (Sub-Period)**: Triggers specific major events such as marriage, promotion, house purchase, or relocation.
+- **Pratyantar Dasha (Sub-Sub Period)**: Marks the exact weeks and days when events manifest physically.
+
+---
+
+### 🔑 Golden Rules for Predicting Dasha Results
+
+1. **Check House Ownership**: A Dasha planet primarily delivers the results of the houses it owns in your natal chart.
+2. **Check Planetary Strength (Bala)**: Is the planet exalted, placed in its own sign, or sitting in a Kendra/Trikona? A strong planet bestows royal fruits during its Dasha.
+3. **D9 Navamsha Verification**: A planet that looks weak in the main D1 chart but is exalted or strong in the D9 Navamsha chart will give unexpected, magnificent results in its second half!
+4. **Transit Synergy (Gochar)**: An event promised by the Dasha will fructify when transit Jupiter or Saturn aspects the relevant house or house lord.
+
+---
+
+### 🌿 Vedic Remedies for Difficult Dashas
+
+During challenging Mahadashas (such as Rahu or Saturn placed in difficult houses):
+- Perform daily **Mantra Japa** dedicated to the Dasha ruler.
+- Engage in targeted **Dana** (charitable acts) on the planet's ruling day.
+- Maintain a **Sattvic lifestyle** to align personal frequency with higher cosmic intelligence.`,
     status: "Published",
     updatedAt: new Date().toISOString().split("T")[0]
   },
   {
     id: "art_3",
-    title: "Ashtakoot Gun Milan: The 36 Points of Marriage Harmony",
+    title: "Ashtakoot 36 Gun Milan: Deep Compatibility Analysis Beyond Basic Numbers",
     category: "Matching",
     author: "Pundit Shastri",
-    readTime: "10 min",
-    content: "Gun Milan is the traditional Ashtakoot matching system evaluating compatibility across 8 parameters: Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot, and Nadi.",
+    readTime: "8 min read • Practical Astrology",
+    content: `### 💍 The Sacred Science of Vedic Compatibility
+
+In Vedic matrimony, Kundli Matching (Gun Milan) is far more than a simple numerical score out of 36 points. It is an ancient psychological, physiological, and spiritual compatibility framework designed by Vedic Sages to ensure emotional longevity, mutual respect, and progeny health between partners.
+
+The traditional **Ashtakoot System** evaluates 8 distinct compatibility parameters (Kootas), each assigned a specific weight from 1 to 8 points.
+
+---
+
+### 📊 The 8 Kootas Explained in Depth
+
+1. **Varna (1 Point)**: Spiritual and intellectual alignment. Evaluates ego compatibility and work ethics.
+2. **Vashya (2 Points)**: Mutual attraction and balance of control in the relationship.
+3. **Tara (3 Points)**: Birth star compatibility, longevity, and mutual luck.
+4. **Yoni (4 Points)**: Physical, intimate, and instinctual harmony between partners based on animal symbols.
+5. **Graha Maitri (5 Points)**: Mental friendship and psychological harmony between the Moon sign rulers.
+6. **Gana (6 Points)**: Temperament and behavioral alignment (Deva, Manushya, Rakshasa Ganas).
+7. **Bhakoot (7 Points)**: Financial growth, emotional happiness, and family longevity based on Moon sign distance (2/12, 5/9, 6/8 positions).
+8. **Nadi (8 Points)**: Physiological, genetic, and blood/nervous system compatibility. Critical for healthy progeny.
+
+---
+
+### 🛑 Understanding Nadi Dosh & Bhakoot Dosh Exceptions (Bhanga)
+
+A common misconception is that if Nadi Dosh (0/8 points) or Bhakoot Dosh (0/7 points) occurs, marriage is impossible. Classical Jyotish texts specify vital cancellation rules (**Dosh Bhanga**):
+
+- **Nadi Dosh Exception**: Cancelled if both partners have the same Moon sign ruler (e.g. Taurus & Libra both ruled by Venus), or if the Nakshatra lords are different despite sharing the same Moon sign.
+- **Bhakoot Dosh Exception**: Cancelled if the Moon sign lords are mutual friends (e.g., Sun & Jupiter, Venus & Mercury).
+
+---
+
+### 🌟 Beyond Gun Milan: The 3 Non-Negotiable Chart Checks
+
+Even with 30+ points in Gun Milan, a complete astrological assessment requires analyzing:
+1. **Manglik Dosh (Mars Placement)**: Balance of fire and passion in the 1st, 4th, 7th, 8th, or 12th houses.
+2. **7th House & 7th Lord Strength**: Overall health of marriage in both individual charts.
+3. **Jupiter & Venus Positions**: Divine blessings for husband (Jupiter in female chart) and wife (Venus in male chart).`,
     status: "Published",
     updatedAt: new Date().toISOString().split("T")[0]
   }
 ];
+
+// TOP DAILY SEARCHED ASTROLOGY TOPICS FOR AUTOMATED GENERATION
+const DAILY_TRENDING_TOPICS = [
+  { topic: "Daily Panchang, Rahu Kaal & Auspicious Choghadiya Muhurat", category: "Panchang" },
+  { topic: "Shani Sade Sati Phases & Effective Saturn Pacification Remedies", category: "Remedies" },
+  { topic: "Vimshottari Mahadasha & Antardasha Transit Shifts Today", category: "Dasha" },
+  { topic: "Guru Transit (Jupiter Gochar) Impact on Career & Wealth", category: "Transits" },
+  { topic: "Ekadashi Vrat & Moon Fasting Protocols for Karmic Purification", category: "Fasting" },
+  { topic: "Ashtakoot 36 Gun Milan & Nadi Dosh Cancellation Secrets", category: "Matching" },
+  { topic: "Rahu-Ketu Axis Shifts: Managing Psychological & Financial Vibrations", category: "Transits" },
+  { topic: "Selecting Unheated Natural Gemstones by Lagna & House Rulers", category: "Gemstones" },
+  { topic: "Solar & Lunar Eclipse (Grahan) Astrological Dos & Don'ts", category: "Transits" },
+  { topic: "Lal Kitab Highly Effective Everyday Remedies for Peace & Prosperity", category: "Remedies" },
+  { topic: "Manglik Dosh Myths vs Realities & Cancellation Rules (Bhanga)", category: "Doshas" },
+  { topic: "Vastu Shastra Energy Alignment for Home Office & Puja Room", category: "Vastu" }
+];
+
+let lastAutoPostDate = "";
+
+async function generateDailyTrendingArticle() {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const existingToday = cmsArticlesStore.find(a => a.isAutoGenerated && a.updatedAt === todayStr);
+  if (existingToday) {
+    lastAutoPostDate = todayStr;
+    return existingToday;
+  }
+
+  const topicObj = DAILY_TRENDING_TOPICS[Math.floor(Math.random() * DAILY_TRENDING_TOPICS.length)];
+  const ai = getGeminiClient();
+
+  const prompt = `Write an extensive, deeply engaging, authoritative, and long-form 1000-word Vedic Astrology master article focusing STRICTLY and EXCLUSIVELY on the single specific topic: "${topicObj.topic}".
+
+REQUIREMENTS FOR AN IMMERSIVE 4-6 MINUTE READING EXPERIENCE:
+1. Focus: Do NOT mix or mention unrelated astrology topics. The entire post must be 100% dedicated to "${topicObj.topic}".
+2. Title: Create a sharp, captivating, laser-focused title specifically about "${topicObj.topic}".
+3. Structure (use clear markdown headers ### and bullet points):
+   - Executive Cosmic Summary & Core Concept
+   - Deep Scriptural Mechanics (Parashari Jyotish Principles & Shlokas)
+   - Detailed Planetary & Astrological Analysis
+   - Practical Real-Life Case Example
+   - Authentic Practical Vedic Remedies (Mantra, Dana, Vrata, Stotra)
+   - Daily Reflection, Meditation & Practice Protocol
+4. Tone: Reverent, deep, highly engaging, rich with authentic Vedic wisdom.
+
+Return JSON strictly matching:
+{
+  "title": "Article Title",
+  "category": "${topicObj.category}",
+  "readTime": "7 min read • Master Guide",
+  "content": "Full long-form article text with clear section headers (###) and markdown formatting."
+}`;
+
+  try {
+    const rawText = await generateGeminiContentWithFallback(ai, {
+      prompt,
+      jsonOutput: true,
+      temperature: 0.6,
+    });
+    const parsed = JSON.parse(rawText || "{}");
+    const newArticle = {
+      id: `art_auto_${Date.now()}`,
+      title: parsed.title || topicObj.topic,
+      category: parsed.category || topicObj.category,
+      author: "Vedanga AI Daily Engine",
+      readTime: parsed.readTime || "7 min read • Master Guide",
+      content: parsed.content || `### Executive Cosmic Summary\nDetailed cosmic analysis on ${topicObj.topic}...`,
+      status: "Published",
+      isAutoGenerated: true,
+      trendingTopic: topicObj.topic,
+      updatedAt: todayStr,
+    };
+
+    cmsArticlesStore.unshift(newArticle);
+    lastAutoPostDate = todayStr;
+    console.log(`[AUTO-POST ENGINE] Automatically generated long-form daily trending article: "${newArticle.title}"`);
+    return newArticle;
+  } catch (err) {
+    console.warn("[AUTO-POST ENGINE] Gemini fallback generation triggered.");
+    const fallbackArticle = {
+      id: `art_auto_${Date.now()}`,
+      title: `${topicObj.topic} - Deep Cosmic Analysis & Vedic Insights`,
+      category: topicObj.category,
+      author: "Vedanga AI Daily Engine",
+      readTime: "7 min read • Master Guide",
+      content: `### 🌟 Executive Cosmic Summary
+Today's planetary alignment highlights ${topicObj.topic}. In classical Parashari Jyotish, planetary transits (Gochar) and active Dasha periods continually reshape our subtle Nadis, physical environment, and internal emotional responses.
+
+---
+
+### 🔮 Scriptural Mechanics & Parashari Principles
+According to Maharishi Parashara, every graha operates as a divine mirror reflecting past karmic seeds (Karma-Paka). When planets align in auspicious angles, your soul receives the grace of higher intuition and material expansion.
+
+---
+
+### 🪐 Impact Across 12 Rashis & Life Domains
+- **Fiery Signs (Aries, Leo, Sagittarius)**: High courage, executive action, and strategic breakthroughs.
+- **Earthy Signs (Taurus, Virgo, Capricorn)**: Material growth, asset consolidation, and patient execution.
+- **Airy Signs (Gemini, Libra, Aquarius)**: Sharp intellectual clarity, communication gains, and networking success.
+- **Watery Signs (Cancer, Scorpio, Pisces)**: Deep intuitive power, emotional healing, and spiritual alignment.
+
+---
+
+### 🕉️ Authentic Vedic Remedies & Practice
+1. Recite the ruling planetary Stotra during morning twilight hours.
+2. Maintain a Sattvic diet and offer fresh water to Surya Dev during sunrise.
+3. Practice 10 minutes of Pranayama and Gayatri Mantra Japa daily.`,
+      status: "Published",
+      isAutoGenerated: true,
+      trendingTopic: topicObj.topic,
+      updatedAt: todayStr,
+    };
+    cmsArticlesStore.unshift(fallbackArticle);
+    lastAutoPostDate = todayStr;
+    return fallbackArticle;
+  }
+}
+
+// Automatically trigger daily post check every 12 hours
+setInterval(() => {
+  generateDailyTrendingArticle();
+}, 12 * 60 * 60 * 1000);
 
 let systemNotificationsStore = [
   {
@@ -1574,9 +1825,30 @@ app.post("/api/admin/ai-config", authenticateAdmin, (req, res) => {
   return res.json({ success: true, config: adminAiConfig });
 });
 
+// PUBLIC CMS ARTICLES API
+app.get("/api/cms/articles", async (req, res) => {
+  const todayStr = new Date().toISOString().split("T")[0];
+  if (lastAutoPostDate !== todayStr) {
+    await generateDailyTrendingArticle().catch(err => console.error("[AUTO-POST ENGINE] Error:", err));
+  }
+  const publishedArticles = cmsArticlesStore.filter(a => a.status === "Published");
+  return res.json({ articles: publishedArticles, trendingTopics: DAILY_TRENDING_TOPICS });
+});
+
 // CONTENT MANAGEMENT (CMS) APIS
 app.get("/api/admin/cms", authenticateAdmin, (req, res) => {
-  return res.json({ articles: cmsArticlesStore });
+  return res.json({ articles: cmsArticlesStore, trendingTopics: DAILY_TRENDING_TOPICS });
+});
+
+app.post("/api/admin/cms/auto-generate", authenticateAdmin, async (req, res) => {
+  try {
+    lastAutoPostDate = ""; // Force fresh auto-generation
+    const article = await generateDailyTrendingArticle();
+    logAdminEvent("CMS", "info", `Auto-generated daily trending post: ${article?.title}`);
+    return res.json({ success: true, article, articles: cmsArticlesStore });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to auto-generate trending article." });
+  }
 });
 
 app.post("/api/admin/cms/save", authenticateAdmin, (req, res) => {
@@ -1869,24 +2141,165 @@ Official Domain: ${baseUrl}
 `);
 });
 
-// Public Sitemap.xml
+// Public Robots.txt
+app.get("/robots.txt", (req, res) => {
+  const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+  const protocol = req.protocol || "https";
+  const baseUrl = `${protocol}://${host}`;
+
+  res.type("text/plain");
+  res.send(`User-agent: *
+Allow: /
+Allow: /article/
+Allow: /api/cms/articles
+Allow: /sitemap.xml
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+Sitemap: ${baseUrl}/sitemap.xml
+`);
+});
+
+// Dynamic SEO Rendered Article Route for Googlebot & Web Search Indexing
+app.get(["/article/:id", "/post/:id"], (req, res) => {
+  const articleId = req.params.id;
+  const article = cmsArticlesStore.find(a => a.id === articleId || a.id === `art_${articleId}`);
+  const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+  const protocol = req.protocol || "https";
+  const baseUrl = `${protocol}://${host}`;
+
+  if (!article) {
+    return res.status(404).send(`<!DOCTYPE html>
+<html>
+<head><title>Article Not Found - Vedanga AI</title></head>
+<body style="font-family:sans-serif;background:#0f172a;color:#f8fafc;padding:2rem;text-align:center;">
+  <h1>404 - Article Not Found</h1>
+  <p><a href="/" style="color:#f59e0b;">Return to Vedanga AI Homepage</a></p>
+</body>
+</html>`);
+  }
+
+  const cleanDescription = (article.content || "")
+    .replace(/[#*`\-\n]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, 160);
+
+  const keywords = `${article.category}, ${article.trendingTopic || article.title}, Vedic Astrology, Jyotish Shastra, Kundli, ${article.title.replace(/[^a-zA-Z0-9 ]/g, "")}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `${baseUrl}/article/${article.id}`
+    },
+    "headline": article.title,
+    "description": cleanDescription,
+    "category": article.category,
+    "author": {
+      "@type": "Person",
+      "name": article.author || "Vedanga AI Daily Engine"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Vedanga AI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${baseUrl}/assets/logo.png`
+      }
+    },
+    "datePublished": article.updatedAt || new Date().toISOString().split("T")[0],
+    "dateModified": article.updatedAt || new Date().toISOString().split("T")[0],
+    "articleBody": (article.content || "").replace(/[#*`]/g, "")
+  };
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${article.title} | Vedanga AI Vedic Astrology</title>
+  <meta name="description" content="${cleanDescription}">
+  <meta name="keywords" content="${keywords}">
+  <meta name="author" content="${article.author || "Vedanga AI"}">
+  <link rel="canonical" href="${baseUrl}/article/${article.id}">
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="${baseUrl}/article/${article.id}">
+  <meta property="og:title" content="${article.title}">
+  <meta property="og:description" content="${cleanDescription}">
+  <meta property="og:site_name" content="Vedanga AI">
+
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${article.title}">
+  <meta name="twitter:description" content="${cleanDescription}">
+
+  <!-- Schema.org JSON-LD for Google Search Crawlers -->
+  <script type="application/ld+json">
+    ${JSON.stringify(jsonLd, null, 2)}
+  </script>
+
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background-color: #090d16; color: #f1f5f9; margin: 0; padding: 20px; line-height: 1.7; }
+    .container { max-width: 800px; margin: 0 auto; background: #0f172a; padding: 30px; border-radius: 20px; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+    h1 { color: #fef3c7; font-size: 28px; margin-top: 15px; }
+    .meta { color: #94a3b8; font-size: 13px; margin-bottom: 25px; border-bottom: 1px solid #1e293b; padding-bottom: 15px; }
+    .content { font-size: 16px; color: #cbd5e1; white-space: pre-line; }
+    .btn { display: inline-block; margin-top: 25px; padding: 12px 24px; background: #f59e0b; color: #0f172a; font-weight: bold; text-decoration: none; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="badge">${article.category}</span>
+    <h1>${article.title}</h1>
+    <div class="meta">
+      By <strong>${article.author}</strong> • ${article.readTime} • Published: ${article.updatedAt}
+    </div>
+    <div class="content">
+      ${article.content.replace(/###\s*(.*)/g, '<h3 style="color:#f59e0b;margin-top:20px;">$1</h3>')}
+    </div>
+    <a href="/#learning" class="btn">Explore All Daily Vedic Articles on Vedanga AI</a>
+  </div>
+</body>
+</html>`;
+
+  res.type("text/html");
+  res.send(html);
+});
+
+// Public Sitemap.xml including all dynamic automated posts
 app.get("/sitemap.xml", (req, res) => {
   const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
   const protocol = req.protocol || "https";
   const baseUrl = `${protocol}://${host}`;
   const today = new Date().toISOString().split("T")[0];
 
-  const pages = [
+  const staticPages = [
     { loc: `${baseUrl}/`, priority: "1.0", changefreq: "daily" },
     { loc: `${baseUrl}/#kundli`, priority: "0.9", changefreq: "daily" },
     { loc: `${baseUrl}/#matching`, priority: "0.9", changefreq: "daily" },
     { loc: `${baseUrl}/#horoscope`, priority: "0.9", changefreq: "daily" },
     { loc: `${baseUrl}/#chat`, priority: "0.8", changefreq: "always" },
-    { loc: `${baseUrl}/#learning`, priority: "0.8", changefreq: "weekly" },
+    { loc: `${baseUrl}/#learning`, priority: "0.9", changefreq: "daily" },
     { loc: `${baseUrl}/#vastu`, priority: "0.7", changefreq: "weekly" },
     { loc: `${baseUrl}/#numerology`, priority: "0.7", changefreq: "weekly" },
     { loc: `${baseUrl}/#remedies`, priority: "0.8", changefreq: "weekly" },
   ];
+
+  const articlePages = cmsArticlesStore
+    .filter(a => a.status === "Published")
+    .map(a => ({
+      loc: `${baseUrl}/article/${a.id}`,
+      priority: "0.8",
+      changefreq: "daily",
+      lastmod: a.updatedAt || today
+    }));
+
+  const pages = [...staticPages, ...articlePages];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -1897,7 +2310,7 @@ ${pages
   .map(
     (p) => `  <url>
     <loc>${p.loc}</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${p.lastmod || today}</lastmod>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`
@@ -1953,6 +2366,8 @@ async function startServer() {
   if (!process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`✨ Vedanga AI Server listening on http://0.0.0.0:${PORT}`);
+      // Boot up immediate daily auto-post generation
+      generateDailyTrendingArticle().catch(err => console.error("[AUTO-POST ENGINE] Startup error:", err));
     });
   }
 }

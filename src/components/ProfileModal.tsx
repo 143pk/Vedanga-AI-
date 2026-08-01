@@ -128,23 +128,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <Save className="w-4 h-4 text-slate-950" />
             <span>Save Profile Changes</span>
           </button>
-
-          <button
-            type="button"
-            onClick={async () => {
-              localStorage.removeItem(`vedanga_sub_${user.email}`);
-              onUpdateUser({ ...user, isSubscribed: false });
-              await fetch("/api/payment/reset-subscription", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: user.email }),
-              }).catch(() => {});
-              window.location.reload();
-            }}
-            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition-all cursor-pointer border border-slate-700 mt-2"
-          >
-            Reset Subscription (Test Payment Screen)
-          </button>
         </form>
       </div>
     </div>

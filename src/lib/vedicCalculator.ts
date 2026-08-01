@@ -223,11 +223,27 @@ export function calculateArudhaLagna(lagnaRashiIndex: number, planets: any[]) {
   };
 }
 
+function formatDashaDate(date: Date): string {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const hoursStr = hours.toString().padStart(2, "0");
+  return `${day} ${month} ${year}, ${hoursStr}:${minutes} ${ampm}`;
+}
+
 export function calculateVimshottariTimeline(
   birthYear: number,
   birthMonth: number,
   birthDay: number,
-  moonSidDeg: number
+  moonSidDeg: number,
+  birthHour: number = 12,
+  birthMinute: number = 0
 ) {
   const DASHA_LORDS = [
     { name: "Ketu", years: 7 },
@@ -241,66 +257,104 @@ export function calculateVimshottariTimeline(
     { name: "Mercury", years: 17 },
   ];
 
-  const nakSpan = 360 / 27;
+  const nakSpan = 360 / 27; // 13.333333333333334 degrees
   const nakIndex = Math.floor(moonSidDeg / nakSpan);
   const degInNak = moonSidDeg % nakSpan;
   const dashaLordIndex = nakIndex % 9;
 
   const fractionPassed = degInNak / nakSpan;
-  const firstDashaTotalYears = DASHA_LORDS[dashaLordIndex].years;
-  const firstDashaRemainingYears = firstDashaTotalYears * (1 - fractionPassed);
+  const birthDate = new Date(birthYear, birthMonth - 1, birthDay, birthHour, birthMinute, 0, 0);
+  const nowMs = Date.now();
 
-  const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
-  const now = new Date();
+  const MS_PER_YEAR = 365.2425 * 24 * 60 * 60 * 1000;
 
-  let currentDate = new Date(birthDate.getTime());
+  // First Dasha Lord
+  const firstLordObj = DASHA_LORDS[dashaLordIndex];
+  const elapsedYearsFirst = firstLordObj.years * fractionPassed;
+  const elapsedMsFirst = elapsedYearsFirst * MS_PER_YEAR;
+
+  // Exact cycle start time = birth time minus elapsed time in first dasha
+  let mdStartMs = birthDate.getTime() - elapsedMsFirst;
+
   const timeline = [];
 
   for (let i = 0; i < 9; i++) {
-    const lordIdx = (dashaLordIndex + i) % 9;
-    const lordObj = DASHA_LORDS[lordIdx];
-    const duration = i === 0 ? firstDashaRemainingYears : lordObj.years;
+    const mdLordIdx = (dashaLordIndex + i) % 9;
+    const mdLordObj = DASHA_LORDS[mdLordIdx];
+    const mdYears = mdLordObj.years;
+    const mdDurationMs = mdYears * MS_PER_YEAR;
 
-    const startDate = new Date(currentDate.getTime());
-    const endDate = new Date(currentDate.getTime());
-    endDate.setFullYear(endDate.getFullYear() + Math.floor(duration));
-    endDate.setMonth(endDate.getMonth() + Math.floor((duration % 1) * 12));
+    const mdEndMs = mdStartMs + mdDurationMs;
+    const isMdCurrent = nowMs >= mdStartMs && nowMs < mdEndMs;
 
-    const isCurrent = now >= startDate && now <= endDate;
+    const mdStartDateObj = new Date(mdStartMs);
+    const mdEndDateObj = new Date(mdEndMs);
 
+    // Antardashas (Sub-periods)
     const antardashas = [];
-    let adCurrentDate = new Date(startDate.getTime());
+    let adStartMs = mdStartMs;
+
     for (let j = 0; j < 9; j++) {
-      const adLordIdx = (lordIdx + j) % 9;
+      const adLordIdx = (mdLordIdx + j) % 9;
       const adLordObj = DASHA_LORDS[adLordIdx];
-      const adYears = (lordObj.years * adLordObj.years) / 120;
+      const adYears = (mdYears * adLordObj.years) / 120;
+      const adDurationMs = adYears * MS_PER_YEAR;
 
-      const adStart = new Date(adCurrentDate.getTime());
-      const adEnd = new Date(adCurrentDate.getTime());
-      adEnd.setDate(adEnd.getDate() + Math.round(adYears * 365.25));
+      const adEndMs = adStartMs + adDurationMs;
+      const isAdCurrent = nowMs >= adStartMs && nowMs < adEndMs;
 
-      const isAdCurrent = now >= adStart && now <= adEnd;
+      const adStartDateObj = new Date(adStartMs);
+      const adEndDateObj = new Date(adEndMs);
+
+      // Pratyantardashas (Sub-sub-periods)
+      const pratyantardashas = [];
+      let padStartMs = adStartMs;
+
+      for (let k = 0; k < 9; k++) {
+        const padLordIdx = (adLordIdx + k) % 9;
+        const padLordObj = DASHA_LORDS[padLordIdx];
+        const padYears = (mdYears * adLordObj.years * padLordObj.years) / (120 * 120);
+        const padDurationMs = padYears * MS_PER_YEAR;
+
+        const padEndMs = padStartMs + padDurationMs;
+        const isPadCurrent = nowMs >= padStartMs && nowMs < padEndMs;
+
+        const padStartDateObj = new Date(padStartMs);
+        const padEndDateObj = new Date(padEndMs);
+
+        pratyantardashas.push({
+          planet: padLordObj.name,
+          startDate: formatDashaDate(padStartDateObj),
+          endDate: formatDashaDate(padEndDateObj),
+          isCurrent: isPadCurrent,
+        });
+
+        padStartMs = padEndMs;
+      }
 
       antardashas.push({
         planet: adLordObj.name,
-        startDate: adStart.toISOString().split("T")[0],
-        endDate: adEnd.toISOString().split("T")[0],
+        startDate: formatDashaDate(adStartDateObj),
+        endDate: formatDashaDate(adEndDateObj),
         isCurrent: isAdCurrent,
+        pratyantardashas,
       });
 
-      adCurrentDate = adEnd;
+      adStartMs = adEndMs;
     }
 
+    const durationYears = i === 0 ? Number((mdYears * (1 - fractionPassed)).toFixed(1)) : mdYears;
+
     timeline.push({
-      planet: lordObj.name,
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
-      durationYears: Number(duration.toFixed(1)),
-      isCurrent,
+      planet: mdLordObj.name,
+      startDate: formatDashaDate(mdStartDateObj),
+      endDate: formatDashaDate(mdEndDateObj),
+      durationYears,
+      isCurrent: isMdCurrent,
       antardashas,
     });
 
-    currentDate = endDate;
+    mdStartMs = mdEndMs;
   }
 
   return timeline;
@@ -310,7 +364,9 @@ export function calculateYoginiTimeline(
   birthYear: number,
   birthMonth: number,
   birthDay: number,
-  moonSidDeg: number
+  moonSidDeg: number,
+  birthHour: number = 12,
+  birthMinute: number = 0
 ) {
   const YOGINIS = [
     { name: "Mangala", lord: "Moon", years: 1, effect: "Auspicious growth, mental peace, and prosperity." },
@@ -329,36 +385,41 @@ export function calculateYoginiTimeline(
 
   const startYoginiIdx = (nakIndex + 3) % 8;
   const fractionPassed = degInNak / nakSpan;
-  const firstYears = YOGINIS[startYoginiIdx].years * (1 - fractionPassed);
 
-  const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
-  const now = new Date();
-  let currentDate = new Date(birthDate.getTime());
+  const birthDate = new Date(birthYear, birthMonth - 1, birthDay, birthHour, birthMinute, 0, 0);
+  const nowMs = Date.now();
+  const MS_PER_YEAR = 365.2425 * 24 * 60 * 60 * 1000;
+
+  const firstYoginiObj = YOGINIS[startYoginiIdx];
+  const elapsedYearsFirst = firstYoginiObj.years * fractionPassed;
+  let cycleStartMs = birthDate.getTime() - elapsedYearsFirst * MS_PER_YEAR;
+
   const timeline = [];
 
   for (let cycle = 0; cycle < 2; cycle++) {
     for (let i = 0; i < 8; i++) {
       const idx = (startYoginiIdx + i) % 8;
       const yogObj = YOGINIS[idx];
-      const duration = (cycle === 0 && i === 0) ? firstYears : yogObj.years;
+      const durationYears = yogObj.years;
+      const durationMs = durationYears * MS_PER_YEAR;
 
-      const startDate = new Date(currentDate.getTime());
-      const endDate = new Date(currentDate.getTime());
-      endDate.setDate(endDate.getDate() + Math.round(duration * 365.25));
+      const endMs = cycleStartMs + durationMs;
+      const isCurrent = nowMs >= cycleStartMs && nowMs < endMs;
 
-      const isCurrent = now >= startDate && now <= endDate;
+      const startDateObj = new Date(cycleStartMs);
+      const endDateObj = new Date(endMs);
 
       timeline.push({
         yogini: yogObj.name,
         lord: yogObj.lord,
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
-        durationYears: Number(duration.toFixed(1)),
+        startDate: formatDashaDate(startDateObj),
+        endDate: formatDashaDate(endDateObj),
+        durationYears: (cycle === 0 && i === 0) ? Number((durationYears * (1 - fractionPassed)).toFixed(1)) : durationYears,
         isCurrent,
         effect: yogObj.effect,
       });
 
-      currentDate = endDate;
+      cycleStartMs = endMs;
     }
   }
 
@@ -1154,10 +1215,21 @@ export function calculateVedicKundli(
   const doshas = calculateDoshas(planetaryPositions, lagnaRashiIndex, moonRashiIndex);
   const strengthMeter = calculateStrengthMeter(shadbala, yogas, ashtakavarga.sav, lagnaRashiIndex);
 
-  const vimshottariTimeline = calculateVimshottariTimeline(year, month, day, moonSid);
-  const yoginiTimeline = calculateYoginiTimeline(year, month, day, moonSid);
+  const vimshottariTimeline = calculateVimshottariTimeline(year, month, day, moonSid, hours, minutes);
+  const yoginiTimeline = calculateYoginiTimeline(year, month, day, moonSid, hours, minutes);
   const transitGochar = calculateCurrentTransits(planetaryPositions, lagnaRashiIndex, moonRashiIndex);
   const structuredRemedies = calculateStructuredRemedies(lagnaRashiIndex, moonRashiIndex, planetaryPositions);
+
+  const activeMD = vimshottariTimeline.find(item => item.isCurrent) || vimshottariTimeline[0];
+  const activeAD = activeMD?.antardashas?.find(ad => ad.isCurrent) || activeMD?.antardashas?.[0];
+  const activePAD = activeAD?.pratyantardashas?.find(pad => pad.isCurrent) || activeAD?.pratyantardashas?.[0];
+
+  const currentMahadasha = activeMD ? `${activeMD.planet} Mahadasha` : `${lagnaRashi.lord} Mahadasha`;
+  const currentAntardasha = activeAD ? `${activeAD.planet} Antardasha` : `${moonRashi.lord} Antardasha`;
+  const currentPratyantardasha = activePAD ? `${activePAD.planet} Pratyantardasha` : undefined;
+  const endsOn = activeMD ? activeMD.endDate : `${year + 35}-10-24`;
+  const activeAntardashaEndsOn = activeAD ? activeAD.endDate : undefined;
+  const activePratyantardashaEndsOn = activePAD ? activePAD.endDate : undefined;
 
   return {
     basics: {
@@ -1173,10 +1245,13 @@ export function calculateVedicKundli(
     housesAnalysis,
     yogas,
     dashaPeriod: {
-      currentMahadasha: `${lagnaRashi.lord} Mahadasha`,
-      currentAntardasha: `${moonRashi.lord} Antardasha`,
-      endsOn: `${year + 35}-10-24`,
-      effectSummary: `Active dasha period influenced by ${lagnaRashi.lord} and ${moonRashi.lord}, guiding core life momentum and personal growth.`,
+      currentMahadasha,
+      currentAntardasha,
+      currentPratyantardasha,
+      endsOn,
+      activeAntardashaEndsOn,
+      activePratyantardashaEndsOn,
+      effectSummary: `Active Vimshottari period governed by ${activeMD?.planet || lagnaRashi.lord} (Mahadasha), ${activeAD?.planet || moonRashi.lord} (Antardasha)${activePAD ? `, and ${activePAD.planet} (Pratyantardasha)` : ''}, guiding current life events.`,
     },
     manglikStatus: {
       isManglik,
