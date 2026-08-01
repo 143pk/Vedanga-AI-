@@ -39,7 +39,7 @@ export interface ProgrammaticPageData {
   schemaJsonLd: Record<string, any>[];
 }
 
-const BASE_URL = "https://ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+const BASE_URL = process.env.APP_URL || "https://vedanga-ai.vercel.app";
 
 // Helper to normalize strings for slug comparison
 function toSlug(text: string): string {

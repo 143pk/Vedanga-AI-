@@ -1,7 +1,7 @@
 // Programmatic Sitemap, RSS Feed & Robots.txt Generator
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "./astrologyData";
 
-const BASE_URL = "https://ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+const BASE_URL = process.env.APP_URL || "https://vedanga-ai.vercel.app";
 
 export function generateRobotsTxt(): string {
   return `User-agent: *
