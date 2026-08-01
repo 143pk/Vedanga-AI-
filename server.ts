@@ -14,7 +14,7 @@ app.use(express.json());
 // SEO & GOOGLE SEARCH CONSOLE INITIAL CONFIG
 // -------------------------------------------------------------
 let seoSettings = {
-  googleSiteVerification: "vedanga-ai-gsc-verification-code",
+  googleSiteVerification: "XUOlt-W-Hdiin8c5b9r0wk4AaulecbFX5rc1Gj9exgk",
   siteUrl: "https://ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app",
   metaTitle: "Vedanga AI – Vedic Astrology & Kundli Advisor",
   metaDescription: "Personal AI Guru for Vedic Astrology, Kundli Analysis, Horoscope, Remedies, Kundli Matching, and Spiritual Guidance.",
