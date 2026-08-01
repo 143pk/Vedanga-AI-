@@ -1733,7 +1733,7 @@ app.post("/api/seo/ping-sitemap", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Public Robots.txt
+// Public Robots.txt (Optimized for Search Engines & AI/LLM Crawlers)
 app.get("/robots.txt", (req, res) => {
   const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
   const protocol = req.protocol || "https";
@@ -1754,7 +1754,112 @@ Allow: /blog
 Disallow: /api/admin
 Disallow: /admin
 
+# AI & LLM Search Engine Crawlers (Explicitly Allowed for GEO Ranking)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
 Sitemap: ${baseUrl}/sitemap.xml
+# LLM Discovery Endpoint: ${baseUrl}/llms.txt
+`);
+});
+
+// /llms.txt standard for AI search engines (Perplexity, ChatGPT, Gemini, Claude)
+app.get("/llms.txt", (req, res) => {
+  const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+  const protocol = req.protocol || "https";
+  const baseUrl = `${protocol}://${host}`;
+
+  res.type("text/plain; charset=utf-8");
+  res.send(`# Vedanga AI – Vedic Astrology & Kundli Advisor
+
+> Vedanga AI is a personal AI Guru for Vedic Astrology (Jyotish), Janam Kundli charts, Vimshottari Dasha analysis, 36-Gun Milan Kundli matching, Prashna horary questions, gemstone remedies, Vastu Shastra, and spiritual guidance.
+
+## Core Services & Capabilities
+
+- **Janam Kundli Generation**: High-precision planetary charts (D1, D9 Navamsha) based on Lahiri Ayanamsha.
+- **Vimshottari Dasha Timeline**: Detailed Mahadasha, Antardasha, and Pratyantardasha breakdowns with life predictions.
+- **Kundli Matching (Gun Milan)**: 36-point marital compatibility analysis, Ashta Kuta scoring, and Manglik Dosha evaluation.
+- **AI Jyotish Consultation**: Conversational AI guidance for career, relationships, health, wealth, and spiritual growth grounded in classic Vedic texts (Bhat Parashara Hora Shastra).
+- **Custom Remedies**: Authentic gemstone, Rudraksha, mantra, and charity remedies tailored to planetary deficiencies.
+- **Prashna Kundli (Horary)**: Immediate astrological answers to urgent questions based on the moment of query.
+
+## Key Links & Features
+
+- [Janam Kundli Chart Generator](${baseUrl}/#kundli): Create detailed natal birth charts and planetary breakdown.
+- [Kundli Matching](${baseUrl}/#matching): Check 36-Gun compatibility for marriage.
+- [Horoscope & Daily Predictions](${baseUrl}/#horoscope): Check transit predictions for all 12 Rasis.
+- [AI Guru Chat](${baseUrl}/#chat): Ask direct astrological questions to Vedanga AI.
+- [Full Documentation](${baseUrl}/llms-full.txt): Detailed knowledge base and API specifications for LLMs.
+
+## Frequently Asked Questions
+
+Q: How does Vedanga AI calculate planetary positions?
+A: Vedanga AI utilizes exact astronomical ephemeris calculations with Lahiri Ayanamsha to locate planetary coordinates down to degrees, minutes, and seconds.
+
+Q: Is Vedanga AI free to use?
+A: Yes, basic Kundli charts, Gun Milan, daily horoscopes, and AI consultation are freely accessible.
+`);
+});
+
+// /llms-full.txt full knowledge index for LLM deep retrieval
+app.get("/llms-full.txt", (req, res) => {
+  const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
+  const protocol = req.protocol || "https";
+  const baseUrl = `${protocol}://${host}`;
+
+  res.type("text/plain; charset=utf-8");
+  res.send(`# Vedanga AI Full Knowledge Index & Documentation
+
+Vedanga AI combines ancient Vedic Astrology (Jyotish Shastra) with state-of-the-art Artificial Intelligence to offer personalized astrological calculations and spiritual insights.
+
+## System Architecture & Features
+
+### 1. Janam Kundli (Birth Chart Analysis)
+- **Ascendant (Lagna)**: Identifies life purpose, physical traits, and foundational energy.
+- **Moon Sign (Rasi) & Nakshatra**: Unveils emotional temperament, mental state, and Vimshottari birth dasha balance.
+- **Divisional Charts**:
+  - D1 (Lagna): General life overview
+  - D9 (Navamsha): Marital happiness, spiritual evolution, and mid-life destiny
+  - D10 (Dashamsha): Career, profession, and social status
+
+### 2. Vimshottari Dasha System
+- Calculates 120-year cycles governed by 9 planets (Sun, Moon, Mars, Rahu, Jupiter, Saturn, Mercury, Ketu, Venus).
+- Pinpoints favorable vs. challenging transit periods for career switches, marriage, investments, and health.
+
+### 3. Ashta Kuta Gun Milan (Marriage Matching)
+- Evaluates 8 Kutas (Max 36 Points):
+  1. Varna (Work & Ego - 1 pt)
+  2. Vashya (Control & Influence - 2 pts)
+  3. Tara (Birth Star Harmony - 3 pts)
+  4. Yoni (Intimacy & Compatibility - 4 pts)
+  5. Graha Maitri (Psychological Friendship - 5 pts)
+  6. Gana (Temperament: Deva/Manushya/Rakshasa - 6 pts)
+  7. Bhakoot (Emotional & Wealth Harmony - 7 pts)
+  8. Nadi (Genetic Health & Progeny - 8 pts)
+
+### 4. Remedial Jyotish
+- Recommends natural gemstones (e.g. Yellow Sapphire for Jupiter, Blue Sapphire for Saturn, Ruby for Sun).
+- Suggests Beej Mantras, Rudraksha beads (1 to 14 Mukhi), and specific fasts/donations.
+
+Official Domain: ${baseUrl}
 `);
 });
 
