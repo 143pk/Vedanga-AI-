@@ -1781,6 +1781,12 @@ Sitemap: ${baseUrl}/sitemap.xml
 `);
 });
 
+// Google AdSense ads.txt verification endpoint
+app.get("/ads.txt", (req, res) => {
+  res.type("text/plain; charset=utf-8");
+  res.send("google.com, pub-6855799245720155, DIRECT, f08c47fec0942fa0\n");
+});
+
 // /llms.txt standard for AI search engines (Perplexity, ChatGPT, Gemini, Claude)
 app.get("/llms.txt", (req, res) => {
   const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
