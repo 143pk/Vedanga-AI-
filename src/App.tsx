@@ -28,6 +28,35 @@ export default function App() {
   const [user, setUser] = useState<UserProfile>(DEFAULT_USER);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // Handle initial URL route / hash and back/forward navigation
+  useEffect(() => {
+    const syncRouteWithTab = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+
+      if (path.startsWith("/learn") || path.startsWith("/article")) {
+        setActiveTab("learning");
+      } else if (hash === "#chat") {
+        setActiveTab("chat");
+      } else if (hash === "#kundli") {
+        setActiveTab("kundli");
+      } else if (hash === "#horoscope") {
+        setActiveTab("horoscope");
+      } else if (hash === "#matching") {
+        setActiveTab("matching");
+      } else if (hash === "#learning") {
+        setActiveTab("learning");
+      }
+    };
+
+    syncRouteWithTab();
+    window.addEventListener("popstate", syncRouteWithTab);
+    window.addEventListener("hashchange", syncRouteWithTab);
+    return () => {
+      window.removeEventListener("popstate", syncRouteWithTab);
+      window.removeEventListener("hashchange", syncRouteWithTab);
+    };
+  }, []);
   // Load saved session on mount if available
   useEffect(() => {
     const savedUser = localStorage.getItem("vedanga_user") || localStorage.getItem("astroguru_user");

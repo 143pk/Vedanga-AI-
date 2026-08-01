@@ -90,6 +90,15 @@ export const GuruChat: React.FC<GuruChatProps> = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [audioActive, setAudioActive] = useState(false);
 
+  // Check for prefilled prompt from SEO CTA buttons
+  useEffect(() => {
+    const prefill = localStorage.getItem("vedanga_chat_prefill");
+    if (prefill) {
+      setInputMsg(prefill);
+      localStorage.removeItem("vedanga_chat_prefill");
+    }
+  }, []);
+
   // Daily Question Count State
   const isUnlimited = isUnlimitedUser(user.email);
   const [dailyCount, setDailyCount] = useState<number>(() => getDailyQuestionCount(user.email));

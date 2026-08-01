@@ -4,6 +4,15 @@ import { GoogleGenAI } from "@google/genai";
 import nodemailer from "nodemailer";
 import QRCode from "qrcode";
 import { calculateVedicKundli } from "./src/lib/vedicCalculator";
+import { getProgrammaticPage } from "./src/seo/programmaticEngine";
+import { searchSeoTopics } from "./src/seo/seoSearch";
+import {
+  generateRobotsTxt,
+  generateSitemapIndex,
+  generateLandingSitemap,
+  generateCombinatoricsSitemap,
+  generateRssFeed
+} from "./src/seo/sitemapGenerator";
 
 const app = express();
 const PORT = 3000;
@@ -2271,55 +2280,157 @@ app.get(["/article/:id", "/post/:id"], (req, res) => {
   res.send(html);
 });
 
-// Public Sitemap.xml including all dynamic automated posts
+// API endpoint for SEO Smart Search
+app.get("/api/seo/search", (req, res) => {
+  const query = (req.query.q as string) || "";
+  const results = searchSeoTopics(query);
+  return res.json({ results });
+});
+
+// API endpoint for Programmatic Page JSON
+app.get("/api/seo/page/:slug", (req, res) => {
+  const slug = req.params.slug;
+  const pageData = getProgrammaticPage(slug);
+  return res.json(pageData);
+});
+
+// Server-Side Rendered (SSR) HTML page for /learn/:slug (optimizes Googlebot & Social Media Crawlers)
+app.get("/learn/:slug", (req, res) => {
+  const pageData = getProgrammaticPage(req.params.slug);
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${pageData.title}</title>
+  <meta name="description" content="${pageData.metaDescription}">
+  <meta name="author" content="${pageData.author}">
+  <link rel="canonical" href="${pageData.canonicalUrl}">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="${pageData.canonicalUrl}">
+  <meta property="og:title" content="${pageData.title}">
+  <meta property="og:description" content="${pageData.metaDescription}">
+  <meta property="og:site_name" content="Vedanga AI">
+
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${pageData.title}">
+  <meta name="twitter:description" content="${pageData.metaDescription}">
+
+  <!-- Structured Data JSON-LD Schemas -->
+  <script type="application/ld+json">
+    ${JSON.stringify(pageData.schemaJsonLd, null, 2)}
+  </script>
+
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background-color: #030712; color: #f3f4f6; margin: 0; padding: 20px; line-height: 1.7; }
+    .container { max-width: 900px; margin: 0 auto; background: #0f172a; padding: 32px; border-radius: 24px; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 4px 14px; border-radius: 999px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+    h1 { color: #fef3c7; font-size: 32px; margin-top: 16px; margin-bottom: 12px; }
+    .meta { color: #9ca3af; font-size: 13px; margin-bottom: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 16px; }
+    .shloka { background: rgba(15, 23, 42, 0.9); border-left: 4px solid #f59e0b; padding: 16px; font-style: italic; color: #fde68a; margin: 20px 0; border-radius: 8px; }
+    .section-title { color: #f59e0b; font-size: 22px; margin-top: 28px; margin-bottom: 10px; border-bottom: 1px solid #1e293b; padding-bottom: 6px; }
+    .content { font-size: 16px; color: #d1d5db; white-space: pre-line; }
+    .faq-box { margin-top: 32px; background: #020617; padding: 24px; border-radius: 16px; border: 1px solid #1e293b; }
+    .faq-q { color: #fbbf24; font-weight: bold; font-size: 16px; margin-top: 16px; }
+    .faq-a { color: #9ca3af; font-size: 14px; margin-top: 4px; }
+    .cta-btn { display: inline-block; margin-top: 28px; padding: 14px 28px; background: linear-gradient(to right, #f59e0b, #eab308); color: #020617; font-weight: bold; text-decoration: none; border-radius: 14px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="badge">${pageData.category}</span>
+    <h1>${pageData.h1}</h1>
+    <div class="meta">
+      By <strong>${pageData.author}</strong> • ${pageData.readTime} • Last Updated: ${pageData.updatedAt} • Verified Jyotish
+    </div>
+    
+    <div class="shloka">${pageData.scripturalShloka}</div>
+    
+    <div class="content">
+      <p><strong>Executive Cosmic Summary:</strong> ${pageData.executiveSummary}</p>
+      ${pageData.sections.map(s => `<div class="section-title">${s.title}</div><p>${s.content}</p>`).join("")}
+    </div>
+
+    <div class="faq-box">
+      <h3 style="color:#fef3c7;margin-top:0;">20+ Astrological FAQs & Scriptural Answers</h3>
+      ${pageData.faqs.slice(0, 10).map(f => `<div class="faq-q">Q: ${f.question}</div><div class="faq-a">A: ${f.answer}</div>`).join("")}
+    </div>
+
+    <div style="text-align:center;">
+      <a href="/#chat" class="cta-btn">Ask Vedanga AI about YOUR Birth Chart</a>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  res.type("text/html");
+  res.send(html);
+});
+
+// Dynamic robots.txt
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain");
+  res.send(generateRobotsTxt());
+});
+
+// Master Sitemap Index
 app.get("/sitemap.xml", (req, res) => {
+  res.type("application/xml");
+  res.send(generateSitemapIndex());
+});
+
+// Landing & Calculators Sitemap
+app.get("/sitemap-landing.xml", (req, res) => {
+  res.type("application/xml");
+  res.send(generateLandingSitemap());
+});
+
+// Programmatic Combinatorics Sitemap
+app.get("/sitemap-astrology-combinatorics.xml", (req, res) => {
+  res.type("application/xml");
+  res.send(generateCombinatoricsSitemap());
+});
+
+// Articles Sitemap
+app.get("/sitemap-articles.xml", (req, res) => {
   const host = req.get("host") || "ais-pre-kkaqrfevbg3kelesribizv-259553995756.asia-southeast1.run.app";
   const protocol = req.protocol || "https";
   const baseUrl = `${protocol}://${host}`;
   const today = new Date().toISOString().split("T")[0];
 
-  const staticPages = [
-    { loc: `${baseUrl}/`, priority: "1.0", changefreq: "daily" },
-    { loc: `${baseUrl}/#kundli`, priority: "0.9", changefreq: "daily" },
-    { loc: `${baseUrl}/#matching`, priority: "0.9", changefreq: "daily" },
-    { loc: `${baseUrl}/#horoscope`, priority: "0.9", changefreq: "daily" },
-    { loc: `${baseUrl}/#chat`, priority: "0.8", changefreq: "always" },
-    { loc: `${baseUrl}/#learning`, priority: "0.9", changefreq: "daily" },
-    { loc: `${baseUrl}/#vastu`, priority: "0.7", changefreq: "weekly" },
-    { loc: `${baseUrl}/#numerology`, priority: "0.7", changefreq: "weekly" },
-    { loc: `${baseUrl}/#remedies`, priority: "0.8", changefreq: "weekly" },
-  ];
-
   const articlePages = cmsArticlesStore
     .filter(a => a.status === "Published")
-    .map(a => ({
-      loc: `${baseUrl}/article/${a.id}`,
-      priority: "0.8",
-      changefreq: "daily",
-      lastmod: a.updatedAt || today
-    }));
-
-  const pages = [...staticPages, ...articlePages];
+    .map(a => `  <url>
+    <loc>${baseUrl}/article/${a.id}</loc>
+    <lastmod>${a.updatedAt || today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>`)
+    .join("\n");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-${pages
-  .map(
-    (p) => `  <url>
-    <loc>${p.loc}</loc>
-    <lastmod>${p.lastmod || today}</lastmod>
-    <changefreq>${p.changefreq}</changefreq>
-    <priority>${p.priority}</priority>
-  </url>`
-  )
-  .join("\n")}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${articlePages}
 </urlset>`;
 
   res.type("application/xml");
   res.send(xml);
+});
+
+// News Sitemap
+app.get("/sitemap-news.xml", (req, res) => {
+  res.type("application/xml");
+  res.send(generateLandingSitemap());
+});
+
+// Dynamic RSS Feed
+app.get("/rss.xml", (req, res) => {
+  res.type("application/xml");
+  res.send(generateRssFeed(cmsArticlesStore));
 });
 
 // Google Search Console HTML Verification endpoints

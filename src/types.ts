@@ -1,13 +1,14 @@
 export type ActiveTab = "chat" | "kundli" | "horoscope" | "matching" | "learning";
 
 export interface UserProfile {
+  id?: string;
   email: string;
   name: string;
   dob: string; // YYYY-MM-DD
   tob: string; // HH:MM
   pob: string; // City, Country
   gender: string;
-  rashi: string; // Moon sign
+  rashi?: string; // Moon sign
   lagna?: string; // Ascendant sign
   isSubscribed?: boolean;
 }

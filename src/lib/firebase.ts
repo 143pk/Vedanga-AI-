@@ -38,30 +38,38 @@ export const auth = getAuth(app);
 // Save or Update User Profile in Firebase Firestore
 export async function saveUserProfileToFirestore(user: UserProfile): Promise<void> {
   if (!user.email) return;
-  // Sanitize document ID by replacing special characters
-  const docId = user.email.toLowerCase().trim().replace(/[^a-z0-9]/g, "_");
-  const userRef = doc(db, "users", docId);
+  try {
+    // Sanitize document ID by replacing special characters
+    const docId = user.email.toLowerCase().trim().replace(/[^a-z0-9]/g, "_");
+    const userRef = doc(db, "users", docId);
 
-  await setDoc(
-    userRef,
-    {
-      ...user,
-      updatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    },
-    { merge: true }
-  );
+    await setDoc(
+      userRef,
+      {
+        ...user,
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn("Firestore save profile offline/unavailable, using local cache:", err);
+  }
 }
 
 // Get User Profile from Firebase Firestore
 export async function getUserProfileFromFirestore(email: string): Promise<UserProfile | null> {
   if (!email) return null;
-  const docId = email.toLowerCase().trim().replace(/[^a-z0-9]/g, "_");
-  const userRef = doc(db, "users", docId);
-  const snap = await getDoc(userRef);
+  try {
+    const docId = email.toLowerCase().trim().replace(/[^a-z0-9]/g, "_");
+    const userRef = doc(db, "users", docId);
+    const snap = await getDoc(userRef);
 
-  if (snap.exists()) {
-    return snap.data() as UserProfile;
+    if (snap.exists()) {
+      return snap.data() as UserProfile;
+    }
+  } catch (err) {
+    console.warn("Firestore fetch profile offline/unavailable:", err);
   }
   return null;
 }
@@ -73,13 +81,17 @@ export async function saveChatMessageToFirestore(
   content: string
 ): Promise<void> {
   if (!email) return;
-  const chatRef = collection(db, "chat_messages");
-  await addDoc(chatRef, {
-    userId: email.toLowerCase().trim(),
-    role,
-    content,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    const chatRef = collection(db, "chat_messages");
+    await addDoc(chatRef, {
+      userId: email.toLowerCase().trim(),
+      role,
+      content,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("Firestore save message offline/unavailable:", err);
+  }
 }
 
 // Get Recent Chat History from Firebase Firestore
@@ -105,7 +117,7 @@ export async function getChatHistoryFromFirestore(
     });
     return messages;
   } catch (err) {
-    console.error("Error fetching chat history from Firebase:", err);
+    console.warn("Firestore fetch chat history offline/unavailable:", err);
     return [];
   }
 }

@@ -25,9 +25,18 @@ import {
   Calendar,
   X,
   Clock,
-  TrendingUp
+  TrendingUp,
+  ExternalLink,
+  ChevronDown,
+  HelpCircle,
+  MessageSquare,
+  ShieldCheck,
+  Check
 } from "lucide-react";
 import { UserProfile } from "../types";
+import { getProgrammaticPage, ProgrammaticPageData } from "../seo/programmaticEngine";
+import { searchSeoTopics, SearchResultItem } from "../seo/seoSearch";
+import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "../seo/astrologyData";
 
 interface LearningViewProps {
   user: UserProfile;
@@ -58,9 +67,37 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
   const [articleCategory, setArticleCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedArticleModal, setSelectedArticleModal] = useState<any | null>(null);
+  const [selectedProgrammaticSlug, setSelectedProgrammaticSlug] = useState<string | null>(null);
+  const [programmaticPageData, setProgrammaticPageData] = useState<ProgrammaticPageData | null>(null);
+  const [expandedFaqIndex, setExpandedFaqIndex] = useState<number | null>(null);
   const [readerFontSize, setReaderFontSize] = useState<"sm" | "base" | "lg">("base");
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [copiedToast, setCopiedToast] = useState<boolean>(false);
+
+  // Auto detect initial path /learn/some-slug
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith("/learn/") && path.length > 7) {
+      const slug = path.replace(/^\/learn\//, "");
+      if (slug) {
+        setSelectedProgrammaticSlug(slug);
+        setProgrammaticPageData(getProgrammaticPage(slug));
+      }
+    }
+  }, []);
+
+  // Update programmatic page data whenever slug changes
+  useEffect(() => {
+    if (selectedProgrammaticSlug) {
+      const page = getProgrammaticPage(selectedProgrammaticSlug);
+      setProgrammaticPageData(page);
+      document.title = page.title;
+      window.history.pushState(null, "", `/learn/${selectedProgrammaticSlug}`);
+      window.scrollTo({ top: 0, behavior: "instant" });
+    } else {
+      document.title = "Vedanga AI – Dynamic SEO Knowledge Hub";
+    }
+  }, [selectedProgrammaticSlug]);
 
   useEffect(() => {
     fetch("/api/cms/articles")
@@ -485,6 +522,278 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
   const currentGuru = guruWisdom[0];
   const currentStory = vedicStories[selectedStoryIdx];
 
+  // PROGRAMMATIC SEO KNOWLEDGE HUB PAGE READER
+  if (selectedProgrammaticSlug && programmaticPageData) {
+    const page = programmaticPageData;
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-28 animate-fade-in">
+        {/* Sticky Header with Breadcrumbs & Actions */}
+        <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-amber-500/30 px-4 md:px-8 py-3 flex items-center justify-between shadow-2xl">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
+            <button
+              onClick={() => {
+                setSelectedProgrammaticSlug(null);
+                setProgrammaticPageData(null);
+                window.history.pushState(null, "", "/learn");
+                window.scrollTo({ top: 0, behavior: "instant" });
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-md shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>← Back to Knowledge Hub</span>
+            </button>
+            <span className="text-slate-600 hidden sm:inline">/</span>
+            <span className="text-amber-400 font-medium hidden sm:inline">{page.category}</span>
+            <span className="text-slate-600 hidden md:inline">/</span>
+            <span className="text-slate-400 truncate max-w-[200px] hidden md:inline">{page.h1}</span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Listen Audio */}
+            <button
+              onClick={() => handleToggleSpeech(page.executiveSummary + " " + page.sections.map(s => s.content).join(" "))}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                isSpeaking
+                  ? "bg-amber-500 text-slate-950 border-amber-400 font-bold animate-pulse"
+                  : "bg-slate-950 text-amber-300 border-amber-500/30 hover:border-amber-400"
+              }`}
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isSpeaking ? "Pause" : "Listen (Audio)"}</span>
+            </button>
+
+            {/* Share */}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(page.canonicalUrl);
+                setCopiedToast(true);
+                setTimeout(() => setCopiedToast(false), 2500);
+              }}
+              className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-amber-300 hover:border-amber-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
+              title="Copy Page URL"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              {copiedToast && <span className="text-[10px] text-green-400">Copied!</span>}
+            </button>
+          </div>
+        </div>
+
+        {/* Article Body Container */}
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-8">
+          {/* Main Title & EEAT Metadata Header */}
+          <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 p-6 md:p-10 rounded-3xl shadow-2xl space-y-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                {page.category}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Verified Parashari Jyotish
+              </span>
+              <span className="text-xs text-slate-400 font-mono ml-auto">
+                {page.readTime}
+              </span>
+            </div>
+
+            <h1 className="font-serif text-3xl md:text-5xl font-extrabold text-amber-100 leading-tight">
+              {page.h1}
+            </h1>
+
+            {/* Author & EEAT Information */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 font-mono">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 flex items-center justify-center font-bold text-sm">
+                  AV
+                </div>
+                <div>
+                  <div className="font-bold text-amber-200 text-sm">{page.author}</div>
+                  <div className="text-[10px] text-slate-400">Senior Vedic Astrologer & Sanskrit Researcher</div>
+                </div>
+              </div>
+              <div className="text-right text-[11px] text-slate-400">
+                <div>Last Updated: <span className="text-amber-300 font-bold">{page.updatedAt}</span></div>
+                <div>Peer-Reviewed by Vedanga AI Council</div>
+              </div>
+            </div>
+
+            {/* Sanskrit Shloka Box */}
+            <div className="p-5 rounded-2xl bg-amber-950/30 border border-amber-500/40 relative overflow-hidden">
+              <div className="text-amber-300 font-serif text-lg md:text-xl font-bold tracking-wide mb-2 text-center">
+                {page.scripturalShloka}
+              </div>
+              <div className="text-xs text-slate-300 italic text-center font-sans">
+                Source: Classical Parashari Hora & Maharishi Jaimini Sutram
+              </div>
+            </div>
+
+            {/* Executive Cosmic Summary */}
+            <div className="space-y-3">
+              <h3 className="text-sm uppercase tracking-wider text-amber-400 font-bold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" /> Executive Cosmic Summary
+              </h3>
+              <p className="text-slate-200 text-base md:text-lg leading-relaxed font-normal bg-slate-950/60 p-5 rounded-2xl border border-slate-800">
+                {page.executiveSummary}
+              </p>
+            </div>
+          </div>
+
+          {/* Detailed H2 Sections */}
+          <div className="space-y-6">
+            {page.sections.map((section, idx) => (
+              <div key={idx} className="bg-slate-900/80 border border-slate-800 hover:border-amber-500/30 p-6 md:p-8 rounded-3xl space-y-4 transition-all">
+                <h2 className="font-serif text-xl md:text-2xl font-bold text-amber-300 flex items-center gap-2.5 border-b border-slate-800 pb-3">
+                  <span className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-mono font-bold flex items-center justify-center border border-amber-500/30">
+                    0{idx + 1}
+                  </span>
+                  {section.title}
+                </h2>
+                <div className="text-slate-300 text-base md:text-lg leading-relaxed whitespace-pre-line font-normal">
+                  {section.content}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* INTERACTIVE RELATED WIDGETS SECTION */}
+          <div className="bg-slate-900/90 border border-amber-500/30 p-6 md:p-8 rounded-3xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="font-serif text-xl font-bold text-amber-100 flex items-center gap-2">
+                <Compass className="w-5 h-5 text-amber-400" />
+                Cosmic Building Blocks & Astrological Elements
+              </h3>
+              <span className="text-xs text-slate-400 font-mono">Explore Classical Jyotish</span>
+            </div>
+
+            {/* Planets Grid */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Ruling Grahas (Planets)</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {PLANETS.map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => setSelectedProgrammaticSlug(`${p.key}-in-vedic-astrology`)}
+                    className="p-3 bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-2xl text-left transition-all cursor-pointer hover:bg-slate-900 group"
+                  >
+                    <div className="font-bold text-amber-200 text-sm group-hover:text-amber-300">{p.name} ({p.sanskrit})</div>
+                    <div className="text-[11px] text-slate-400 truncate">{p.qualities[0]} • {p.day}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 20-40 DYNAMIC SCRIPTURAL FAQS SECTION */}
+          <div className="bg-slate-900/90 border border-slate-800 p-6 md:p-8 rounded-3xl space-y-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                  <HelpCircle className="w-4 h-4" /> Scriptural FAQ Engine
+                </span>
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-amber-100">
+                20+ Classical Questions & Scriptural Answers
+              </h3>
+              <p className="text-xs text-slate-400">
+                Authentic answers derived from Brihat Parashara Hora Shastra, Phaladeepika, and Jaimini Sutras.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {page.faqs.map((faq, fIdx) => {
+                const isOpen = expandedFaqIndex === fIdx;
+                return (
+                  <div
+                    key={fIdx}
+                    className="bg-slate-950 border border-slate-800 hover:border-amber-500/30 rounded-2xl transition-all overflow-hidden"
+                  >
+                    <button
+                      onClick={() => setExpandedFaqIndex(isOpen ? null : fIdx)}
+                      className="w-full p-4 text-left font-semibold text-sm text-amber-200 hover:text-amber-300 flex items-center justify-between gap-3 cursor-pointer"
+                    >
+                      <span className="flex items-start gap-2">
+                        <span className="text-amber-400 font-bold shrink-0">Q{fIdx + 1}.</span>
+                        <span>{faq.question}</span>
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-180 text-amber-400" : ""}`} />
+                    </button>
+                    {isOpen && (
+                      <div className="px-4 pb-4 pt-1 text-slate-300 text-xs md:text-sm leading-relaxed border-t border-slate-900 bg-slate-900/40">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* AUTOMATIC TOPIC CLUSTERS & INTERLINKING SECTION */}
+          <div className="bg-slate-900/90 border border-amber-500/30 p-6 md:p-8 rounded-3xl space-y-6">
+            <div className="space-y-1 border-b border-slate-800 pb-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4" /> Automatic Topic Clusters
+              </span>
+              <h3 className="font-serif text-2xl font-bold text-amber-100">
+                Related Astrological Guides & Deep Dives
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {page.topicClusterLinks.map((link, lIdx) => (
+                <button
+                  key={lIdx}
+                  onClick={() => setSelectedProgrammaticSlug(link.slug)}
+                  className="p-4 bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-2xl text-left transition-all cursor-pointer hover:bg-slate-900/90 group flex flex-col justify-between space-y-2"
+                >
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                      {link.category}
+                    </span>
+                    <div className="font-serif font-bold text-amber-200 text-sm group-hover:text-amber-300 line-clamp-1">
+                      {link.title}
+                    </div>
+                    <p className="text-xs text-slate-400 line-clamp-2">
+                      {link.description}
+                    </p>
+                  </div>
+                  <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1 pt-1">
+                    <span>Read Guide</span>
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* AI CALL TO ACTION CARD */}
+          <div className="p-8 rounded-3xl bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 border-2 border-amber-500/50 shadow-2xl text-center space-y-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <Sparkles className="w-3.5 h-3.5" /> Vedanga AI Direct Consultation
+            </div>
+            <h3 className="font-serif text-2xl md:text-3xl font-extrabold text-amber-100">
+              Want Exact Guidance for YOUR Birth Chart?
+            </h3>
+            <p className="text-slate-300 text-sm md:text-base max-w-xl mx-auto">
+              Ask Guru Chat to analyze your specific birth details, active Vimshottari Dasha, and transit alignments in real time.
+            </p>
+            <button
+              onClick={() => {
+                localStorage.setItem("vedanga_chat_prefill", page.ctaPrompt);
+                window.location.hash = "#chat";
+              }}
+              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-extrabold text-base transition-all hover:scale-105 shadow-xl shadow-amber-500/30 flex items-center gap-2 mx-auto cursor-pointer"
+            >
+              <MessageSquare className="w-5 h-5 fill-slate-950" />
+              <span>Ask Vedanga AI about YOUR Birth Chart →</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Full-Page Dedicated Post Reader View (Isolated Complete View)
   if (selectedArticleModal) {
     return (
@@ -787,34 +1096,91 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
             </div>
           )}
 
-          {/* Search & Category Filter */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="text"
-                placeholder="Search daily insights & topics..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 rounded-2xl pl-9 pr-3 py-2 text-xs text-slate-200 outline-none"
-              />
+          {/* Search & Category Filter with Smart SEO Suggestions */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-amber-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search 10,000+ topics (e.g. Saturn Venus, Sun 3rd House)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-950 border border-amber-500/30 focus:border-amber-400 rounded-2xl pl-9 pr-8 py-2.5 text-xs text-slate-100 placeholder-slate-500 outline-none shadow-lg"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-3 text-slate-500 hover:text-amber-400 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
+                {["All", "Panchang", "Transits", "Dasha", "Remedies", "Fasting", "Matching", "Gemstones"].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setArticleCategory(cat)}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      articleCategory === cat
+                        ? "bg-amber-500 text-slate-950 font-bold"
+                        : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
-              {["All", "Panchang", "Transits", "Dasha", "Remedies", "Fasting", "Matching", "Gemstones"].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setArticleCategory(cat)}
-                  className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    articleCategory === cat
-                      ? "bg-amber-500 text-slate-950 font-bold"
-                      : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+            {/* Smart SEO Real-Time Search Results Grid */}
+            {searchQuery.trim().length >= 2 && (
+              <div className="p-4 bg-slate-900/95 border border-amber-500/40 rounded-3xl space-y-3 shadow-2xl">
+                <div className="flex items-center justify-between text-xs text-amber-300 font-bold border-b border-slate-800 pb-2">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    Instant SEO Topic Results for "{searchQuery}"
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">Real-Time Engine</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">
+                  {searchSeoTopics(searchQuery).map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSelectedProgrammaticSlug(item.slug);
+                        setSearchQuery("");
+                      }}
+                      className="p-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-2xl text-left transition-all cursor-pointer group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between text-[10px] text-amber-400 font-bold uppercase mb-0.5">
+                          <span>{item.category}</span>
+                          <span className="text-slate-500 font-mono">{item.type}</span>
+                        </div>
+                        <div className="font-serif font-bold text-amber-100 text-xs md:text-sm group-hover:text-amber-300">
+                          {item.title}
+                        </div>
+                        <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                          {item.snippet}
+                        </p>
+                      </div>
+                      <div className="text-[10px] font-bold text-amber-400 flex items-center gap-1 mt-2">
+                        <span>Open Astrological Guide →</span>
+                      </div>
+                    </button>
+                  ))}
+                  {searchSeoTopics(searchQuery).length === 0 && (
+                    <div className="col-span-2 text-center py-6 text-xs text-slate-400">
+                      No exact match found. Try searching for "Saturn", "Venus", "3rd House", "Mahadasha", "Nakshatra", "AI Kundli", etc.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Articles Grid */}
@@ -1463,6 +1829,45 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
           </div>
         </div>
       )}
+
+      {/* PERSISTENT KNOWLEDGE HUB DIRECTORY FOOTER */}
+      <div className="p-6 md:p-8 rounded-3xl bg-slate-900/90 border border-amber-500/30 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 font-mono">
+            <Compass className="w-4 h-4" /> SEO Knowledge Hub Directory
+          </span>
+          <span className="text-[10px] text-slate-400 font-mono">10,000+ Parashari Pages</span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 pt-1">
+          {[
+            { label: "Saturn in 3rd House", slug: "saturn-in-3rd-house" },
+            { label: "Venus in Pisces Exaltation", slug: "venus-in-pisces" },
+            { label: "Sun Antardasha Analysis", slug: "sun-antardasha" },
+            { label: "Rahu Mahadasha Guide", slug: "rahu-mahadasha" },
+            { label: "Aquarius Ascendant Blueprint", slug: "aquarius-ascendant" },
+            { label: "Punarvasu Nakshatra Wisdom", slug: "punarvasu-nakshatra" },
+            { label: "Free AI Kundli Generator", slug: "ai-kundli" },
+            { label: "AI Marriage Compatibility & Gun Milan", slug: "marriage-prediction" },
+            { label: "Vimshottari Dasha Calculator", slug: "dasha-analysis" },
+            { label: "Career & 10th House Predictor", slug: "career-prediction" },
+            { label: "Today's AI Horoscope Forecast", slug: "ai-horoscope" },
+            { label: "Janma Nakshatra Calculator", slug: "nakshatra-calculator" }
+          ].map((item, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setSelectedProgrammaticSlug(item.slug);
+                window.scrollTo({ top: 0, behavior: "instant" });
+              }}
+              className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-xs text-amber-200/90 hover:text-amber-300 font-medium transition-all cursor-pointer hover:bg-slate-900 flex items-center gap-1"
+            >
+              <span>{item.label}</span>
+              <ChevronRight className="w-3 h-3 text-amber-400" />
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
