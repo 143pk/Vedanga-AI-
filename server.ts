@@ -2377,6 +2377,13 @@ app.get("/robots.txt", (req, res) => {
   res.send(generateRobotsTxt());
 });
 
+// Google AdSense ads.txt
+app.get("/ads.txt", (req, res) => {
+  res.type("text/plain");
+  const pubId = process.env.ADSENSE_PUB_ID || "pub-6855799245720155";
+  res.send(`google.com, ${pubId}, DIRECT, f08c47fec0942fa0`);
+});
+
 // Master Sitemap Index
 app.get("/sitemap.xml", (req, res) => {
   res.type("application/xml");
