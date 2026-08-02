@@ -1,26 +1,31 @@
 import React from "react";
-import { Sparkles, Compass, User } from "lucide-react";
+import { Sparkles, Compass, User, Home } from "lucide-react";
 import { UserProfile } from "../types";
 
 interface HeaderProps {
   user: UserProfile;
   onOpenProfile: () => void;
+  onGoHome?: () => void;
   onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile }) => {
+export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile, onGoHome }) => {
   return (
     <header className="sticky top-0 z-30 bg-slate-950/85 backdrop-blur-md border-b border-amber-500/20 px-4 py-3">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 p-[1.5px] shadow-md shadow-amber-500/20">
+        <button
+          onClick={onGoHome}
+          className="flex items-center space-x-2.5 text-left group cursor-pointer"
+          title="Return to Home Landing Page"
+        >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 p-[1.5px] shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
             <div className="w-full h-full bg-slate-950 rounded-xl flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-amber-300" />
             </div>
           </div>
           <div>
-            <span className="font-serif text-lg font-bold tracking-tight bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent">
+            <span className="font-serif text-lg font-bold tracking-tight bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent group-hover:from-white group-hover:to-amber-300 transition-colors">
               Vedanga AI
             </span>
             <div className="flex items-center space-x-1.5 text-[10px] text-emerald-400 font-medium">
@@ -28,10 +33,22 @@ export const Header: React.FC<HeaderProps> = ({ user, onOpenProfile }) => {
               <span>Guru Online</span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* User Badge & Controls */}
         <div className="flex items-center space-x-2">
+          {/* Home Button */}
+          {onGoHome && (
+            <button
+              onClick={onGoHome}
+              className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-amber-500/20 text-slate-300 hover:text-amber-300 text-xs font-medium transition-all cursor-pointer"
+              title="Home Page"
+            >
+              <Home className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Home</span>
+            </button>
+          )}
+
           {/* Location / Profile Badge */}
           <button
             onClick={onOpenProfile}

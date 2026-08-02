@@ -23,7 +23,16 @@ const DEFAULT_USER: UserProfile = {
 };
 
 export default function App() {
-  const [viewState, setViewState] = useState<"landing" | "app">("app");
+  const [viewState, setViewState] = useState<"landing" | "app">(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path.startsWith("/learn") || path.startsWith("/article") || (hash && hash.length > 1)) {
+        return "app";
+      }
+    }
+    return "landing";
+  });
   const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
   const [user, setUser] = useState<UserProfile>(DEFAULT_USER);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -36,16 +45,22 @@ export default function App() {
 
       if (path.startsWith("/learn") || path.startsWith("/article")) {
         setActiveTab("learning");
+        setViewState("app");
       } else if (hash === "#chat") {
         setActiveTab("chat");
+        setViewState("app");
       } else if (hash === "#kundli") {
         setActiveTab("kundli");
+        setViewState("app");
       } else if (hash === "#horoscope") {
         setActiveTab("horoscope");
+        setViewState("app");
       } else if (hash === "#matching") {
         setActiveTab("matching");
+        setViewState("app");
       } else if (hash === "#learning") {
         setActiveTab("learning");
+        setViewState("app");
       }
     };
 
@@ -57,6 +72,20 @@ export default function App() {
       window.removeEventListener("hashchange", syncRouteWithTab);
     };
   }, []);
+
+  const handleStartApp = (tab: ActiveTab = "chat", initialPrompt?: string) => {
+    if (initialPrompt) {
+      localStorage.setItem("vedanga_chat_prefill", initialPrompt);
+    }
+    setActiveTab(tab);
+    setViewState("app");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleGoHome = () => {
+    setViewState("landing");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   // Load saved session on mount if available
   useEffect(() => {
     const savedUser = localStorage.getItem("vedanga_user") || localStorage.getItem("astroguru_user");
@@ -95,7 +124,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500/30 selection:text-amber-200">
       <AnimatePresence mode="wait">
-        {/* 1. Landing Page (Optional view) */}
+        {/* 1. Landing Page */}
         {viewState === "landing" && (
           <motion.div
             key="landing"
@@ -104,11 +133,11 @@ export default function App() {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <LandingPage onStart={() => setViewState("app")} />
+            <LandingPage onStart={handleStartApp} />
           </motion.div>
         )}
 
-        {/* 2. Main App View Direct Access */}
+        {/* 2. Main App View */}
         {viewState === "app" && (
           <motion.div
             key="app"
@@ -121,6 +150,7 @@ export default function App() {
             <Header
               user={user}
               onOpenProfile={() => setIsProfileOpen(true)}
+              onGoHome={handleGoHome}
             />
 
             <main className="flex-1 pb-16">
