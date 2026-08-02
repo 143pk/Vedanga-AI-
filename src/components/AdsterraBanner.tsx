@@ -30,13 +30,22 @@ export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({
         </style>
       </head>
       <body>
-        <script type="text/javascript" src="https://pl30651401.effectivecpmnetwork.com/be/07/5a/be075a3bf7dff970686df2c02e309444.js"></script>
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '7cbcb41dfd2ef893df45d995bdbc9166',
+            'format' : 'iframe',
+            'height' : 90,
+            'width' : 728,
+            'params' : {}
+          };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/7cbcb41dfd2ef893df45d995bdbc9166/invoke.js"></script>
       </body>
     </html>
   `;
 
   return (
-    <div className={`my-6 text-center overflow-hidden rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 shadow-xs ${className}`}>
+    <div className={`my-6 text-center overflow-hidden rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 shadow-xs ${className}`}>
       {label && (
         <div className="text-[10px] font-medium tracking-wider uppercase text-slate-400 dark:text-slate-500 mb-1.5">
           {label}
