@@ -1,6 +1,6 @@
 {
   "name": "Vedanga AI – Vedic Astrology & Kundli Advisor",
-  "description": "Personal AI Guru for Vedic Astrology, Kundli Analysis, Horoscope, Remedies, Kundli Matching, and Spiritual Guidance.",
+  "description": "Comprehensive Vedic Astrology Blog and Knowledge Journal providing scripturally verified articles on Planets, Bhavas, Rashis, Nakshatras, and Classical Remedies.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

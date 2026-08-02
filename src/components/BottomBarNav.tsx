@@ -3,7 +3,7 @@ import { MessageSquare, Compass, Sun, HeartHandshake, BookOpen } from "lucide-re
 import { ActiveTab } from "../types";
 
 interface BottomBarNavProps {
-  activeTab: ActiveTab;
+  activeTab: ActiveTab | "home";
   onSelectTab: (tab: ActiveTab) => void;
 }
 
@@ -31,14 +31,14 @@ export const BottomBarNav: React.FC<BottomBarNavProps> = ({ activeTab, onSelectT
     },
     {
       id: "learning" as ActiveTab,
-      label: "Learning",
+      label: "Knowledge Hub",
       icon: BookOpen,
     },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-xl border-t border-amber-500/20 px-2 py-2">
-      <div className="max-w-lg mx-auto grid grid-cols-5 gap-1">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-amber-200/80 px-2 py-2 shadow-lg">
+      <div className="max-w-md mx-auto grid grid-cols-5 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -49,12 +49,12 @@ export const BottomBarNav: React.FC<BottomBarNavProps> = ({ activeTab, onSelectT
               onClick={() => onSelectTab(tab.id)}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 cursor-pointer ${
                 isActive
-                  ? "bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30 shadow-md shadow-amber-500/10 scale-[1.02]"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
+                  ? "bg-amber-100/90 text-amber-900 font-bold border border-amber-300 shadow-xs scale-[1.02]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
-              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 mb-1 ${isActive ? "text-amber-400" : "text-slate-400"}`} />
-              <span className="text-[10px] sm:text-[11px] tracking-tight truncate leading-tight">
+              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 mb-0.5 ${isActive ? "text-amber-700" : "text-slate-500"}`} />
+              <span className="text-[10px] sm:text-[11px] tracking-tight truncate leading-tight font-medium">
                 {tab.label}
               </span>
             </button>
@@ -64,3 +64,4 @@ export const BottomBarNav: React.FC<BottomBarNavProps> = ({ activeTab, onSelectT
     </div>
   );
 };
+
