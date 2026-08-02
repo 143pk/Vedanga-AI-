@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "motion/react";
 import { BreadcrumbNav, BreadcrumbItem } from "./BreadcrumbNav";
+import { AdsterraBanner } from "./AdsterraBanner";
 import {
   BookOpen,
   Search,
@@ -374,6 +375,9 @@ export const CategoryHubView: React.FC<CategoryHubViewProps> = ({
           </div>
         </section>
       )}
+
+      {/* Adsterra Banner */}
+      <AdsterraBanner label="Sponsored Ad" />
 
       {/* ALL ARTICLES LISTING & FILTER TABS */}
       <section className="space-y-5">

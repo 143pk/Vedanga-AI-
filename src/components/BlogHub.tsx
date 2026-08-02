@@ -39,6 +39,7 @@ import { DailyIndexer } from "../seo/daily";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { CategoryHubView } from "./CategoryHubView";
 import { BreadcrumbNav } from "./BreadcrumbNav";
+import { AdsterraBanner } from "./AdsterraBanner";
 
 export interface BlogArticleItem {
   id: string;
@@ -780,6 +781,9 @@ export const BlogHub: React.FC = () => {
               </div>
             </div>
 
+            {/* Adsterra Advertisement Banner */}
+            <AdsterraBanner label="Advertisement" />
+
             {/* Table of Contents & Executive Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <section className="md:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-3">
@@ -1044,6 +1048,11 @@ export const BlogHub: React.FC = () => {
           />
         )}
       </main>
+      </div>
+
+      {/* GLOBAL ADSTERRA AD BANNER */}
+      <div className="max-w-4xl mx-auto px-4 mt-8">
+        <AdsterraBanner label="Sponsored Advertisement" />
       </div>
 
       {/* FOOTER */}
