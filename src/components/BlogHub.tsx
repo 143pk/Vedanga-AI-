@@ -45,6 +45,57 @@ export interface BlogArticleItem {
   excerpt: string;
   featured?: boolean;
   tags: string[];
+  imageUrl?: string;
+}
+
+export function getArticleImageUrl(slug: string, category?: string): string {
+  const s = slug.toLowerCase();
+
+  if (s.includes("saturn") || s.includes("shani")) {
+    return "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("venus") || s.includes("shukra")) {
+    return "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("sun") || s.includes("surya")) {
+    return "https://images.unsplash.com/photo-1532693322450-2cb5c511067d?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("moon") || s.includes("chandra") || s.includes("horoscope")) {
+    return "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("rahu") || s.includes("ketu")) {
+    return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("jupiter") || s.includes("guru") || s.includes("mercury") || s.includes("mars")) {
+    return "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("house") || s.includes("bhava")) {
+    return "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("nakshatra")) {
+    return "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("kundli") || s.includes("birth-chart") || category === "Landings") {
+    return "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (s.includes("remedy") || s.includes("yogas") || s.includes("mantra")) {
+    return "https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=1000&q=80";
+  }
+
+  if (category === "Planets") {
+    return "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (category === "Houses") {
+    return "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (category === "Nakshatras") {
+    return "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=1000&q=80";
+  }
+  if (category === "Rashis") {
+    return "https://images.unsplash.com/photo-1532960401447-7dd05bef20b0?auto=format&fit=crop&w=1000&q=80";
+  }
+
+  return "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1000&q=80";
 }
 
 const CURATED_BLOG_POSTS: BlogArticleItem[] = [
@@ -489,6 +540,25 @@ export const BlogHub: React.FC = () => {
               )}
             </header>
 
+            {/* Premium Article Hero Cover Image */}
+            <div className="relative rounded-2xl overflow-hidden border border-amber-200/80 shadow-xs h-56 sm:h-72 md:h-80 bg-slate-950 group">
+              <img
+                src={getArticleImageUrl(articlePageData.slug, articlePageData.category)}
+                alt={articlePageData.h1}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 flex items-center justify-between text-white text-xs">
+                <span className="px-3 py-1 rounded-md bg-amber-900/80 backdrop-blur-md text-amber-200 border border-amber-500/40 font-semibold">
+                  {articlePageData.category}
+                </span>
+                <span className="text-amber-100/90 font-serif italic text-xs hidden sm:inline">
+                  Classical Parashari Principles • Scripturally Verified Analysis
+                </span>
+              </div>
+            </div>
+
             {/* Table of Contents & Executive Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <section className="md:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-3">
@@ -672,31 +742,33 @@ export const BlogHub: React.FC = () => {
             </footer>
           </article>
         ) : (
-          /* BLOG HUB INDEX VIEW */
-          <div className="space-y-8">
-            {/* Hero Header */}
-            <header className="bg-white rounded-3xl p-8 sm:p-12 border border-amber-200/80 shadow-xs text-center space-y-4">
-              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold">
+          /* BLOG HUB INDEX VIEW - CLEAN & MINIMALIST EDITORIAL LAYOUT */
+          <div className="space-y-10">
+            {/* Minimalist Hero Header */}
+            <header className="py-8 sm:py-12 border-b border-amber-200/60 space-y-6 text-center max-w-3xl mx-auto">
+              <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-semibold">
                 <BookOpen className="w-3.5 h-3.5 text-amber-700" />
-                <span>Parashari Jyotish Knowledge Engine</span>
+                <span>Vedic Astrology Knowledge Journal</span>
               </div>
-              <h1 className="font-serif text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
-                Vedic Astrology Knowledge & Insights Journal
+
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                Classical Jyotish Insights & Vedic Wisdom
               </h1>
-              <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-                Explore in-depth articles on Planets, Houses (Bhavas), Zodiac Signs (Rashis), Nakshatras, Mahadashas, Transits, and Classical Remedies.
+
+              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto font-normal">
+                In-depth articles and research on Navagraha planets, Bhavas, Rashis, Nakshatras, Mahadasha cycles, and authentic Parashari remedies.
               </p>
 
-              {/* Real-Time Smart Search Bar */}
-              <div className="max-w-xl mx-auto relative pt-2">
+              {/* Minimalist Search Bar */}
+              <div className="relative max-w-lg mx-auto pt-2">
                 <div className="relative">
-                  <Search className="w-5 h-5 text-amber-700 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search e.g. 'Saturn 3rd house', 'Venus Pisces', 'Sun Antardasha', 'Nakshatra'..."
-                    className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-slate-50 border border-slate-300 focus:border-amber-600 focus:ring-2 focus:ring-amber-200 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
+                    placeholder="Search articles e.g. Saturn 3rd house, Rahu Dasha..."
+                    className="w-full pl-11 pr-10 py-3 rounded-2xl bg-white border border-slate-200 focus:border-amber-600 focus:ring-2 focus:ring-amber-100 text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
                   />
                   {searchQuery && (
                     <button
@@ -710,7 +782,7 @@ export const BlogHub: React.FC = () => {
 
                 {/* Instant Search Results Dropdown */}
                 {searchQuery.trim() && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-amber-200 shadow-2xl z-30 max-h-96 overflow-y-auto divide-y divide-slate-100 text-left">
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-amber-200 shadow-xl z-30 max-h-96 overflow-y-auto divide-y divide-slate-100 text-left">
                     {searchResults.length > 0 ? (
                       searchResults.map((res) => (
                         <button
@@ -733,7 +805,7 @@ export const BlogHub: React.FC = () => {
                       ))
                     ) : (
                       <div className="p-6 text-center text-xs text-slate-500">
-                        No exact match found. Try searching "Saturn", "Jupiter", "Dasha", "Panchang", or "Nakshatra".
+                        No articles found matching "{searchQuery}". Try searching "Saturn", "Jupiter", or "House".
                       </div>
                     )}
                   </div>
@@ -741,47 +813,88 @@ export const BlogHub: React.FC = () => {
               </div>
             </header>
 
-            {/* High Intent Topics Grid */}
-            <section className="space-y-4">
-              <h2 className="font-serif text-2xl font-bold text-slate-900 flex items-center space-x-2">
-                <Zap className="w-5 h-5 text-amber-700" />
-                <span>Featured Canonical Guides & Research Topics</span>
-              </h2>
+            {/* Featured Hero Article */}
+            {displayArticles.length > 0 && activeCategory === "All" && !searchQuery && (
+              <section className="space-y-3">
+                <div className="flex items-center space-x-2 text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Featured Article</span>
+                </div>
+                <div
+                  onClick={() => handleOpenArticle(displayArticles[0].slug)}
+                  className="bg-white rounded-3xl overflow-hidden border border-amber-200/90 hover:border-amber-400 hover:shadow-lg transition-all cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group"
+                >
+                  <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 text-xs">
+                        <span className="px-3 py-1 rounded-full font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                          {displayArticles[0].category}
+                        </span>
+                        <span className="text-slate-500 flex items-center space-x-1 font-medium">
+                          <Clock className="w-3.5 h-3.5 text-amber-700" />
+                          <span>{displayArticles[0].readTime}</span>
+                        </span>
+                      </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {HIGH_INTENT_LANDINGS.map((l) => (
+                      <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-slate-900 group-hover:text-amber-800 transition-colors leading-tight">
+                        {displayArticles[0].title}
+                      </h2>
+
+                      <p className="text-slate-600 text-sm leading-relaxed line-clamp-3">
+                        {displayArticles[0].excerpt}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex items-center space-x-2 text-xs font-bold text-amber-800 group-hover:translate-x-1 transition-transform">
+                      <span>Read Featured Article</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-5 relative h-56 md:h-full min-h-[220px] bg-slate-950 overflow-hidden">
+                    <img
+                      src={getArticleImageUrl(displayArticles[0].slug, displayArticles[0].category)}
+                      alt={displayArticles[0].title}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-slate-950/60 via-transparent to-transparent" />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Clean Category Tabs */}
+            <section className="flex items-center justify-between gap-4 border-b border-slate-200/80 pb-3 overflow-x-auto">
+              <div className="flex items-center space-x-2">
+                {["All", "Planets", "Houses", "Rashis", "Nakshatras", "Kundli Guides", "Daily Content"].map((cat) => (
                   <button
-                    key={l.slug}
-                    onClick={() => handleOpenArticle(l.slug)}
-                    className="p-5 rounded-2xl bg-white border border-amber-200/80 hover:border-amber-400 hover:shadow-md text-left transition-all space-y-2 group cursor-pointer"
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      activeCategory === cat
+                        ? "bg-amber-800 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-700 hover:bg-amber-50 hover:text-amber-900"
+                    }`}
                   >
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 inline-block">
-                      {l.category}
-                    </span>
-                    <h3 className="font-bold text-sm text-slate-900 group-hover:text-amber-800 transition-colors">
-                      {l.h1}
-                    </h3>
-                    <p className="text-xs text-slate-600 line-clamp-2">{l.description}</p>
+                    {cat}
                   </button>
                 ))}
               </div>
-            </section>
 
-            {/* Filter Tabs */}
-            <section className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-              {["All", "Planets", "Houses", "Rashis", "Nakshatras", "Kundli Guides", "Daily Content", "Bookmarks"].map((cat) => (
+              {bookmarkedSlugs.length > 0 && (
                 <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeCategory === cat
-                      ? "bg-amber-700 text-white shadow-xs"
-                      : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                  onClick={() => setActiveCategory("Bookmarks")}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    activeCategory === "Bookmarks"
+                      ? "bg-amber-800 text-white"
+                      : "bg-amber-50 text-amber-900 border border-amber-200"
                   }`}
                 >
-                  {cat} {cat === "Bookmarks" && `(${bookmarkedSlugs.length})`}
+                  <BookMarked className="w-3.5 h-3.5" />
+                  <span>Bookmarks ({bookmarkedSlugs.length})</span>
                 </button>
-              ))}
+              )}
             </section>
 
             {/* Articles Grid */}
@@ -790,29 +903,41 @@ export const BlogHub: React.FC = () => {
                 <article
                   key={art.slug}
                   onClick={() => handleOpenArticle(art.slug)}
-                  className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
+                  className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">
-                        {art.category}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-medium">{art.readTime}</span>
-                    </div>
-
-                    <h3 className="font-serif text-lg font-bold text-slate-900 group-hover:text-amber-800 transition-colors line-clamp-2">
-                      {art.title}
-                    </h3>
-
-                    <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{art.excerpt}</p>
+                  {/* Article Card Thumbnail Image */}
+                  <div className="relative h-44 sm:h-48 bg-slate-950 overflow-hidden">
+                    <img
+                      src={getArticleImageUrl(art.slug, art.category)}
+                      alt={art.title}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+                    <span className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-amber-200 border border-amber-500/30 px-2.5 py-0.5 rounded-md text-[11px] font-bold">
+                      {art.category}
+                    </span>
+                    <span className="absolute bottom-3 right-3 text-slate-200 text-[11px] font-medium bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded">
+                      {art.readTime}
+                    </span>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                    <span>{art.publishedAt}</span>
-                    <span className="font-bold text-amber-800 group-hover:translate-x-1 transition-transform flex items-center space-x-1">
-                      <span>Read Article</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </span>
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="font-serif text-base sm:text-lg font-bold text-slate-900 group-hover:text-amber-800 transition-colors line-clamp-2 leading-snug">
+                        {art.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{art.excerpt}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+                      <span>{art.publishedAt}</span>
+                      <span className="font-bold text-amber-800 group-hover:translate-x-1 transition-transform flex items-center space-x-1">
+                        <span>Read</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
                   </div>
                 </article>
               ))}
