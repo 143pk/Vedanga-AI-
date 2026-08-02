@@ -44,28 +44,33 @@ app.use((req, res, next) => {
     return res.status(200).send(`google-site-verification: ${filename}\ngoogle-site-verification: ${token}`);
   }
 
+  const hostHeader = (req.get("host") || "").toLowerCase();
+  const domainUrl = hostHeader.includes("vercel.app") 
+    ? `https://${hostHeader}` 
+    : (process.env.APP_URL || "https://vedanga-ai.vercel.app");
+
   if (urlPath === "/sitemap.xml") {
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
-    return res.status(200).send(generateSitemapIndex());
+    return res.status(200).send(generateSitemapIndex(domainUrl));
   }
 
   if (urlPath === "/sitemap-landing.xml") {
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
-    return res.status(200).send(generateLandingSitemap());
+    return res.status(200).send(generateLandingSitemap(domainUrl));
   }
 
   if (urlPath === "/sitemap-astrology-combinatorics.xml") {
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
-    return res.status(200).send(generateCombinatoricsSitemap());
+    return res.status(200).send(generateCombinatoricsSitemap(domainUrl));
   }
 
   if (urlPath === "/sitemap-news.xml") {
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
-    return res.status(200).send(generateLandingSitemap());
+    return res.status(200).send(generateLandingSitemap(domainUrl));
   }
 
   if (urlPath === "/sitemap-articles.xml") {
@@ -75,9 +80,15 @@ app.use((req, res, next) => {
     const articles = typeof cmsArticlesStore !== "undefined" ? cmsArticlesStore : [];
     const articlePages = articles
       .filter((a: any) => a.status === "Published")
-      .map((a: any) => `  <url>\n    <loc>https://vedanga-ai.vercel.app/article/${a.id}</loc>\n    <lastmod>${a.updatedAt || today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>`)
+      .map((a: any) => `  <url>\n    <loc>${domainUrl}/article/${a.id}</loc>\n    <lastmod>${a.updatedAt || today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>`)
       .join("\n");
-    return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${articlePages}\n</urlset>`);
+    return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>\n<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${articlePages}\n</urlset>`);
+  }
+
+  if (urlPath === "/sitemap.xsl") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.sendFile(path.join(process.cwd(), "public", "sitemap.xsl"));
   }
 
   if (urlPath === "/robots.txt") {
