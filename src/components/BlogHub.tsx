@@ -28,13 +28,17 @@ import {
   ShieldCheck,
   FileText,
   List,
-  Layers
+  Layers,
+  Menu,
+  History
 } from "lucide-react";
 import { getProgrammaticPage, ProgrammaticPageData } from "../seo/programmaticEngine";
 import { searchSeoTopics, SearchResultItem } from "../seo/seoSearch";
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "../seo/astrologyData";
 import { DailyIndexer } from "../seo/daily";
-import { AdSenseUnit } from "./AdSenseUnit";
+import { SidebarNavigation } from "./SidebarNavigation";
+import { CategoryHubView } from "./CategoryHubView";
+import { BreadcrumbNav } from "./BreadcrumbNav";
 
 export interface BlogArticleItem {
   id: string;
@@ -207,11 +211,38 @@ const CURATED_BLOG_POSTS: BlogArticleItem[] = [
 ];
 
 export const BlogHub: React.FC = () => {
-  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [activeCategory, setActiveCategory] = useState<string>(() => {
+    try {
+      return localStorage.getItem("vedanga_last_category") || "home";
+    } catch {
+      return "home";
+    }
+  });
+
+  const [activeTopicKey, setActiveTopicKey] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("vedanga_last_topic") || null;
+    } catch {
+      return null;
+    }
+  });
+
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isOpenMobile, setIsOpenMobile] = useState<boolean>(false);
+  const [isCollapsedDesktop, setIsCollapsedDesktop] = useState<boolean>(false);
+
   const [bookmarkedSlugs, setBookmarkedSlugs] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("vedanga_bookmarks");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [recentlyViewed, setRecentlyViewed] = useState<{ slug: string; title: string; date: string }[]>(() => {
+    try {
+      const saved = localStorage.getItem("vedanga_recently_viewed");
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -224,29 +255,69 @@ export const BlogHub: React.FC = () => {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [copiedToast, setCopiedToast] = useState<boolean>(false);
 
-  // Sync route on mount and popstate
+  // Scroll positions map for instant restoration on back/forth
+  const scrollPositionsRef = React.useRef<Record<string, number>>({});
+
+  const saveScrollPosition = () => {
+    const key = selectedSlug ? `article:${selectedSlug}` : `cat:${activeCategory}:${activeTopicKey || ""}`;
+    scrollPositionsRef.current[key] = window.scrollY;
+  };
+
+  const restoreScrollPosition = (key: string) => {
+    setTimeout(() => {
+      const pos = scrollPositionsRef.current[key];
+      if (pos !== undefined) {
+        window.scrollTo({ top: pos, behavior: "instant" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
+    }, 25);
+  };
+
+  // Sync state with URL on mount and browser popstate/hashchange
   useEffect(() => {
     const handleUrlRoute = () => {
       const path = window.location.pathname;
       const hash = window.location.hash;
 
       let slugCandidate: string | null = null;
+      let categoryCandidate: string | null = null;
+      let topicCandidate: string | null = null;
+
       if (path.startsWith("/learn/") && path.length > 7) {
         slugCandidate = path.replace(/^\/learn\//, "");
       } else if (hash && hash.startsWith("#article/")) {
         slugCandidate = hash.replace(/^#article\//, "");
-      } else if (hash && hash.length > 1 && hash !== "#home") {
-        slugCandidate = hash.substring(1);
+      } else if (path.startsWith("/category/") && path.length > 10) {
+        const parts = path.replace(/^\/category\//, "").split("/");
+        categoryCandidate = parts[0];
+        if (parts.length > 1 && parts[1]) {
+          topicCandidate = parts[1];
+        }
+      } else if (hash && hash.startsWith("#category/")) {
+        const parts = hash.replace(/^#category\//, "").split("/");
+        categoryCandidate = parts[0];
+        if (parts.length > 1 && parts[1]) {
+          topicCandidate = parts[1];
+        }
       }
 
       if (slugCandidate) {
         setSelectedSlug(slugCandidate);
         const data = getProgrammaticPage(slugCandidate);
         setArticlePageData(data);
+        restoreScrollPosition(`article:${slugCandidate}`);
+      } else if (categoryCandidate) {
+        setSelectedSlug(null);
+        setArticlePageData(null);
+        setActiveCategory(categoryCandidate);
+        setActiveTopicKey(topicCandidate);
+        restoreScrollPosition(`cat:${categoryCandidate}:${topicCandidate || ""}`);
       } else {
         setSelectedSlug(null);
         setArticlePageData(null);
         document.title = "Vedanga Astrology Journal – Classical Vedic Knowledge & Insights";
+        restoreScrollPosition(`cat:${activeCategory}:${activeTopicKey || ""}`);
       }
     };
 
@@ -259,9 +330,25 @@ export const BlogHub: React.FC = () => {
     };
   }, []);
 
+  // Save active category and topic key to localStorage
+  useEffect(() => {
+    try {
+      if (activeCategory) {
+        localStorage.setItem("vedanga_last_category", activeCategory);
+      }
+      if (activeTopicKey) {
+        localStorage.setItem("vedanga_last_topic", activeTopicKey);
+      } else {
+        localStorage.removeItem("vedanga_last_topic");
+      }
+    } catch {
+      // Storage fallback
+    }
+  }, [activeCategory, activeTopicKey]);
+
   // Inject dynamic JSON-LD structured data into head on article view
   useEffect(() => {
-    if (articlePageData) {
+    if (articlePageData && selectedSlug) {
       document.title = `${articlePageData.title}`;
 
       const oldScripts = document.querySelectorAll("script[data-dynamic-schema='true']");
@@ -276,11 +363,6 @@ export const BlogHub: React.FC = () => {
           document.head.appendChild(script);
         });
       }
-
-      if (window.location.pathname !== `/learn/${selectedSlug}`) {
-        window.history.pushState(null, "", `/learn/${selectedSlug}`);
-      }
-      window.scrollTo({ top: 0, behavior: "instant" });
     }
   }, [selectedSlug, articlePageData]);
 
@@ -293,26 +375,81 @@ export const BlogHub: React.FC = () => {
     });
   };
 
+  const updateRecentlyViewed = (slug: string, title: string) => {
+    try {
+      const filtered = recentlyViewed.filter((item) => item.slug !== slug);
+      const updated = [{ slug, title, date: new Date().toLocaleDateString() }, ...filtered].slice(0, 8);
+      setRecentlyViewed(updated);
+      localStorage.setItem("vedanga_recently_viewed", JSON.stringify(updated));
+    } catch {
+      // Storage fallback
+    }
+  };
+
   const handleOpenArticle = (slug: string) => {
+    saveScrollPosition();
     setSelectedSlug(slug);
-    setArticlePageData(getProgrammaticPage(slug));
+    const data = getProgrammaticPage(slug);
+    setArticlePageData(data);
     setExpandedFaqIndex(null);
     setIsSpeaking(false);
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
+
+    updateRecentlyViewed(slug, data.h1 || slug);
+
+    const targetUrl = `/learn/${slug}`;
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({ type: "article", slug }, "", targetUrl);
+    }
+    restoreScrollPosition(`article:${slug}`);
+  };
+
+  const handleSelectCategory = (cat: string) => {
+    saveScrollPosition();
+    setActiveCategory(cat);
+    setActiveTopicKey(null);
+    setSelectedSlug(null);
+    setArticlePageData(null);
+
+    const targetUrl = `/category/${cat}`;
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({ type: "category", category: cat }, "", targetUrl);
+    }
+    restoreScrollPosition(`cat:${cat}:`);
+  };
+
+  const handleSelectTopic = (cat: string, topicKey: string) => {
+    saveScrollPosition();
+    setActiveCategory(cat);
+    setActiveTopicKey(topicKey);
+    setSelectedSlug(null);
+    setArticlePageData(null);
+
+    const targetUrl = `/category/${cat}/${topicKey}`;
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({ type: "topic", category: cat, topicKey }, "", targetUrl);
+    }
+    restoreScrollPosition(`cat:${cat}:${topicKey}`);
   };
 
   const handleBackToBlog = () => {
+    saveScrollPosition();
     setSelectedSlug(null);
     setArticlePageData(null);
+    setActiveCategory("home");
+    setActiveTopicKey(null);
     setIsSpeaking(false);
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
-    window.history.pushState(null, "", "/learn");
+
+    if (window.location.pathname !== "/learn" && window.location.pathname !== "/") {
+      window.history.pushState({ type: "home" }, "", "/learn");
+    }
     document.title = "Vedanga Astrology Journal – Classical Vedic Knowledge & Insights";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    restoreScrollPosition("cat:home:");
   };
 
   const handleToggleSpeech = (text: string) => {
@@ -385,6 +522,23 @@ export const BlogHub: React.FC = () => {
     return base;
   }, [activeCategory, searchQuery, bookmarkedSlugs]);
 
+  const prevNextArticles = useMemo(() => {
+    if (!selectedSlug) return { prev: null, next: null };
+    const list = displayArticles;
+    const currentIndex = list.findIndex((a) => a.slug === selectedSlug);
+
+    if (currentIndex !== -1) {
+      const prev = currentIndex > 0 ? list[currentIndex - 1] : null;
+      const next = currentIndex < list.length - 1 ? list[currentIndex + 1] : null;
+      return { prev, next };
+    }
+
+    return {
+      prev: list[0] || null,
+      next: list[1] || null
+    };
+  }, [selectedSlug, displayArticles]);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-amber-100 selection:text-amber-900">
       {/* Toast Notification */}
@@ -403,50 +557,76 @@ export const BlogHub: React.FC = () => {
       </AnimatePresence>
 
       {/* HEADER NAVBAR */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-amber-200/80 px-4 py-3.5 shadow-xs">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          <button
-            onClick={handleBackToBlog}
-            className="flex items-center space-x-3 text-left group focus:outline-none"
-          >
-            <div className="w-10 h-10 rounded-xl bg-amber-600 p-[2px] shadow-sm">
-              <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-amber-700 group-hover:scale-105 transition-transform" />
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-amber-200/80 px-4 py-3 shadow-xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            {/* Mobile Hamburger Menu Toggle */}
+            <button
+              onClick={() => setIsOpenMobile(true)}
+              className="lg:hidden p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 transition-colors flex items-center space-x-1.5 text-xs font-bold cursor-pointer"
+              title="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5 text-amber-800" />
+              <span className="hidden xs:inline">Menu</span>
+            </button>
+
+            <button
+              onClick={handleBackToBlog}
+              className="flex items-center space-x-3 text-left group focus:outline-none"
+            >
+              <div className="w-9 h-9 rounded-xl bg-amber-600 p-[2px] shadow-sm">
+                <div className="w-full h-full bg-white rounded-[9px] flex items-center justify-center">
+                  <BookOpen className="w-4.5 h-4.5 text-amber-700 group-hover:scale-105 transition-transform" />
+                </div>
               </div>
-            </div>
-            <div>
-              <span className="font-serif text-xl font-bold tracking-tight text-slate-900 block leading-tight">
-                Vedanga Astrology Journal
-              </span>
-              <span className="text-[11px] font-semibold text-amber-800 tracking-wider block">
-                Authentic Jyotish Research & Classical Insights
-              </span>
-            </div>
-          </button>
+              <div>
+                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-slate-900 block leading-tight">
+                  Vedanga Astrology Journal
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-amber-800 tracking-wider block">
+                  Authentic Jyotish Research & Classical Insights
+                </span>
+              </div>
+            </button>
+          </div>
 
           {/* Header Quick Navigation */}
           <div className="hidden sm:flex items-center space-x-2 text-xs font-semibold text-slate-700">
             <button
-              onClick={() => setActiveCategory("Planets")}
-              className="px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:text-amber-800 transition-colors"
+              onClick={handleBackToBlog}
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                activeCategory === "home" && !selectedSlug
+                  ? "bg-amber-100 text-amber-900 font-bold"
+                  : "hover:bg-amber-50 hover:text-amber-800"
+              }`}
+            >
+              Home
+            </button>
+            <button
+              onClick={() => handleSelectCategory("planets")}
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                activeCategory === "planets" && !selectedSlug
+                  ? "bg-amber-100 text-amber-900 font-bold"
+                  : "hover:bg-amber-50 hover:text-amber-800"
+              }`}
             >
               Planets
             </button>
             <button
-              onClick={() => setActiveCategory("Houses")}
-              className="px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:text-amber-800 transition-colors"
+              onClick={() => handleSelectCategory("houses")}
+              className="px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:text-amber-800 transition-colors cursor-pointer"
             >
               Houses
             </button>
             <button
-              onClick={() => setActiveCategory("Nakshatras")}
-              className="px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:text-amber-800 transition-colors"
+              onClick={() => handleSelectCategory("nakshatras")}
+              className="px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:text-amber-800 transition-colors cursor-pointer"
             >
               Nakshatras
             </button>
             <button
-              onClick={() => setActiveCategory("Kundli Guides")}
-              className="px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:text-amber-800 transition-colors"
+              onClick={() => handleSelectCategory("kundli-guides")}
+              className="px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:text-amber-800 transition-colors cursor-pointer"
             >
               Guides
             </button>
@@ -454,25 +634,47 @@ export const BlogHub: React.FC = () => {
         </div>
       </header>
 
-      {/* MAIN CONTAINER */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Top Header Ad Banner */}
-        <AdSenseUnit slot="2189033269" className="mb-6" />
+      {/* MAIN CONTAINER WITH SIDEBAR */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-6 flex flex-col lg:flex-row gap-6">
+        <SidebarNavigation
+          activeSlug={selectedSlug}
+          activeCategory={activeCategory}
+          activeTopicKey={activeTopicKey}
+          onSelectSlug={handleOpenArticle}
+          onSelectCategory={handleSelectCategory}
+          onSelectTopic={handleSelectTopic}
+          onGoHome={handleBackToBlog}
+          bookmarkedSlugs={bookmarkedSlugs}
+          isOpenMobile={isOpenMobile}
+          onCloseMobile={() => setIsOpenMobile(false)}
+          isCollapsedDesktop={isCollapsedDesktop}
+          onToggleCollapseDesktop={() => setIsCollapsedDesktop((prev) => !prev)}
+        />
 
+        <main className="flex-1 min-w-0">
         {/* ARTICLE READER VIEW */}
         {selectedSlug && articlePageData ? (
           <article className="space-y-8 animate-fadeIn">
             {/* Breadcrumb Navigation */}
-            <nav className="flex items-center space-x-2 text-xs text-slate-500 border-b border-slate-200 pb-3">
-              <button onClick={handleBackToBlog} className="hover:text-amber-800 flex items-center space-x-1 font-medium">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>All Articles</span>
-              </button>
-              <ChevronRight className="w-3 h-3 text-slate-400" />
-              <span className="text-amber-800 font-semibold">{articlePageData.category}</span>
-              <ChevronRight className="w-3 h-3 text-slate-400" />
-              <span className="text-slate-800 truncate max-w-xs font-medium">{articlePageData.h1}</span>
-            </nav>
+            <BreadcrumbNav
+              className="border-b border-amber-200/60 pb-2.5 mb-4"
+              items={[
+                { label: "Journal Home", onClick: handleBackToBlog, url: "/" },
+                {
+                  label: articlePageData.category,
+                  onClick: () => {
+                    handleBackToBlog();
+                    setActiveCategory(articlePageData.category.toLowerCase());
+                  },
+                  url: `/category/${articlePageData.category.toLowerCase()}`
+                },
+                {
+                  label: articlePageData.h1,
+                  isCurrent: true,
+                  url: `/article/${selectedSlug}`
+                }
+              ]}
+            />
 
             {/* Article Header Card */}
             <header className="bg-white rounded-2xl p-6 sm:p-8 border border-amber-200/80 shadow-xs space-y-4">
@@ -608,9 +810,6 @@ export const BlogHub: React.FC = () => {
               </section>
             </div>
 
-            {/* Mid-Article Ad Banner */}
-            <AdSenseUnit slot="2189033269" label="SPONSORED ASTROLOGY CONTENT" className="my-6" />
-
             {/* Main Article Sections */}
             <section className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-8">
               {articlePageData.sections.map((section, idx) => (
@@ -625,9 +824,6 @@ export const BlogHub: React.FC = () => {
                 </div>
               ))}
             </section>
-
-            {/* Post-Article Ad Banner */}
-            <AdSenseUnit slot="2189033269" label="ADVERTISEMENT" className="my-6" />
 
             {/* Clickable Astrological Element Cards */}
             <section className="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs space-y-6">
@@ -752,6 +948,74 @@ export const BlogHub: React.FC = () => {
               </div>
             </section>
 
+            {/* PREVIOUS & NEXT ARTICLE NAVIGATION */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-amber-200/80">
+              {prevNextArticles.prev ? (
+                <button
+                  onClick={() => handleOpenArticle(prevNextArticles.prev!.slug)}
+                  className="p-4 rounded-2xl bg-white border border-amber-200/80 hover:border-amber-500 hover:shadow-md transition-all text-left flex items-center space-x-3 group cursor-pointer"
+                >
+                  <ArrowLeft className="w-5 h-5 text-amber-700 shrink-0 group-hover:-translate-x-1 transition-transform" />
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Previous Article</span>
+                    <h4 className="font-serif font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-800 truncate">
+                      {prevNextArticles.prev.title}
+                    </h4>
+                  </div>
+                </button>
+              ) : <div />}
+
+              {prevNextArticles.next ? (
+                <button
+                  onClick={() => handleOpenArticle(prevNextArticles.next!.slug)}
+                  className="p-4 rounded-2xl bg-white border border-amber-200/80 hover:border-amber-500 hover:shadow-md transition-all text-right flex items-center justify-end space-x-3 group cursor-pointer"
+                >
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Next Article</span>
+                    <h4 className="font-serif font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-800 truncate">
+                      {prevNextArticles.next.title}
+                    </h4>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-amber-700 shrink-0 group-hover:translate-x-1 transition-transform" />
+                </button>
+              ) : <div />}
+            </div>
+
+            {/* RECENTLY VIEWED ARTICLES */}
+            {recentlyViewed.length > 0 && (
+              <section className="bg-amber-50/60 rounded-2xl p-5 border border-amber-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <History className="w-4 h-4 text-amber-700" />
+                    <span>Recently Viewed Articles</span>
+                  </h3>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("vedanga_recently_viewed");
+                      setRecentlyViewed([]);
+                    }}
+                    className="text-[10px] text-amber-800 font-bold hover:underline cursor-pointer"
+                  >
+                    Clear History
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                  {recentlyViewed.map((item) => (
+                    <button
+                      key={item.slug}
+                      onClick={() => handleOpenArticle(item.slug)}
+                      className="p-3 rounded-xl bg-white border border-amber-200/70 hover:border-amber-500 hover:shadow-xs transition-all text-left group cursor-pointer"
+                    >
+                      <span className="font-bold text-xs text-slate-900 group-hover:text-amber-800 line-clamp-1 block">
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">Viewed {item.date}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* References & Disclaimer */}
             <footer className="p-6 rounded-2xl bg-slate-100 border border-slate-200 space-y-3 text-xs text-slate-600">
               <div className="flex items-center space-x-2 text-slate-800 font-bold">
@@ -767,215 +1031,20 @@ export const BlogHub: React.FC = () => {
             </footer>
           </article>
         ) : (
-          /* BLOG HUB INDEX VIEW - CLEAN & MINIMALIST EDITORIAL LAYOUT */
-          <div className="space-y-10">
-            {/* Minimalist Hero Header */}
-            <header className="py-8 sm:py-12 border-b border-amber-200/60 space-y-6 text-center max-w-3xl mx-auto">
-              <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-semibold">
-                <BookOpen className="w-3.5 h-3.5 text-amber-700" />
-                <span>Vedic Astrology Knowledge Journal</span>
-              </div>
-
-              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                Classical Jyotish Insights & Vedic Wisdom
-              </h1>
-
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto font-normal">
-                In-depth articles and research on Navagraha planets, Bhavas, Rashis, Nakshatras, Mahadasha cycles, and authentic Parashari remedies.
-              </p>
-
-              {/* Minimalist Search Bar */}
-              <div className="relative max-w-lg mx-auto pt-2">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search articles e.g. Saturn 3rd house, Rahu Dasha..."
-                    className="w-full pl-11 pr-10 py-3 rounded-2xl bg-white border border-slate-200 focus:border-amber-600 focus:ring-2 focus:ring-amber-100 text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Instant Search Results Dropdown */}
-                {searchQuery.trim() && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-amber-200 shadow-xl z-30 max-h-96 overflow-y-auto divide-y divide-slate-100 text-left">
-                    {searchResults.length > 0 ? (
-                      searchResults.map((res) => (
-                        <button
-                          key={res.slug}
-                          onClick={() => {
-                            setSearchQuery("");
-                            handleOpenArticle(res.slug);
-                          }}
-                          className="w-full p-4 hover:bg-amber-50/60 text-left transition-colors flex items-start justify-between gap-3 cursor-pointer"
-                        >
-                          <div>
-                            <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
-                              {res.category}
-                            </span>
-                            <h4 className="font-bold text-sm text-slate-900">{res.title}</h4>
-                            <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{res.snippet}</p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-amber-700 shrink-0 mt-1" />
-                        </button>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center text-xs text-slate-500">
-                        No articles found matching "{searchQuery}". Try searching "Saturn", "Jupiter", or "House".
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </header>
-
-            {/* Index Header Ad Banner */}
-            <AdSenseUnit slot="2189033269" label="SPONSORED ASTROLOGY CONTENT" className="my-6" />
-
-            {/* Featured Hero Article */}
-            {displayArticles.length > 0 && activeCategory === "All" && !searchQuery && (
-              <section className="space-y-3">
-                <div className="flex items-center space-x-2 text-xs font-bold text-amber-900 uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Featured Article</span>
-                </div>
-                <div
-                  onClick={() => handleOpenArticle(displayArticles[0].slug)}
-                  className="bg-white rounded-3xl overflow-hidden border border-amber-200/90 hover:border-amber-400 hover:shadow-lg transition-all cursor-pointer grid grid-cols-1 md:grid-cols-12 gap-0 group"
-                >
-                  <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3 text-xs">
-                        <span className="px-3 py-1 rounded-full font-bold bg-amber-100 text-amber-900 border border-amber-200">
-                          {displayArticles[0].category}
-                        </span>
-                        <span className="text-slate-500 flex items-center space-x-1 font-medium">
-                          <Clock className="w-3.5 h-3.5 text-amber-700" />
-                          <span>{displayArticles[0].readTime}</span>
-                        </span>
-                      </div>
-
-                      <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-slate-900 group-hover:text-amber-800 transition-colors leading-tight">
-                        {displayArticles[0].title}
-                      </h2>
-
-                      <p className="text-slate-600 text-sm leading-relaxed line-clamp-3">
-                        {displayArticles[0].excerpt}
-                      </p>
-                    </div>
-
-                    <div className="pt-2 flex items-center space-x-2 text-xs font-bold text-amber-800 group-hover:translate-x-1 transition-transform">
-                      <span>Read Featured Article</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-5 relative h-56 md:h-full min-h-[220px] bg-slate-950 overflow-hidden">
-                    <img
-                      src={getArticleImageUrl(displayArticles[0].slug, displayArticles[0].category)}
-                      alt={displayArticles[0].title}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-slate-950/60 via-transparent to-transparent" />
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Clean Category Tabs */}
-            <section className="flex items-center justify-between gap-4 border-b border-slate-200/80 pb-3 overflow-x-auto">
-              <div className="flex items-center space-x-2">
-                {["All", "Planets", "Houses", "Rashis", "Nakshatras", "Kundli Guides", "Daily Content"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                      activeCategory === cat
-                        ? "bg-amber-800 text-white shadow-xs"
-                        : "bg-slate-100 text-slate-700 hover:bg-amber-50 hover:text-amber-900"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              {bookmarkedSlugs.length > 0 && (
-                <button
-                  onClick={() => setActiveCategory("Bookmarks")}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center space-x-1.5 ${
-                    activeCategory === "Bookmarks"
-                      ? "bg-amber-800 text-white"
-                      : "bg-amber-50 text-amber-900 border border-amber-200"
-                  }`}
-                >
-                  <BookMarked className="w-3.5 h-3.5" />
-                  <span>Bookmarks ({bookmarkedSlugs.length})</span>
-                </button>
-              )}
-            </section>
-
-            {/* Articles Grid */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayArticles.map((art) => (
-                <article
-                  key={art.slug}
-                  onClick={() => handleOpenArticle(art.slug)}
-                  className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
-                >
-                  {/* Article Card Thumbnail Image */}
-                  <div className="relative h-44 sm:h-48 bg-slate-950 overflow-hidden">
-                    <img
-                      src={getArticleImageUrl(art.slug, art.category)}
-                      alt={art.title}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-                    <span className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-amber-200 border border-amber-500/30 px-2.5 py-0.5 rounded-md text-[11px] font-bold">
-                      {art.category}
-                    </span>
-                    <span className="absolute bottom-3 right-3 text-slate-200 text-[11px] font-medium bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded">
-                      {art.readTime}
-                    </span>
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="font-serif text-base sm:text-lg font-bold text-slate-900 group-hover:text-amber-800 transition-colors line-clamp-2 leading-snug">
-                        {art.title}
-                      </h3>
-
-                      <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{art.excerpt}</p>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-                      <span>{art.publishedAt}</span>
-                      <span className="font-bold text-amber-800 group-hover:translate-x-1 transition-transform flex items-center space-x-1">
-                        <span>Read</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </section>
-
-            {/* Index Bottom Ad Banner */}
-            <AdSenseUnit slot="2189033269" label="ADVERTISEMENT" className="mt-10 mb-4" />
-          </div>
+          /* CATEGORY HUB PAGE / TOPIC LISTING PAGE */
+          <CategoryHubView
+            categoryId={activeCategory || "planets"}
+            topicKey={activeTopicKey || undefined}
+            onSelectSlug={handleOpenArticle}
+            onSelectTopic={handleSelectTopic}
+            onSelectCategory={handleSelectCategory}
+            onGoHome={handleBackToBlog}
+            bookmarkedSlugs={bookmarkedSlugs}
+            onToggleBookmark={toggleBookmark}
+          />
         )}
       </main>
+      </div>
 
       {/* FOOTER */}
       <footer className="mt-16 bg-white border-t border-slate-200 px-4 py-8 text-xs text-slate-500 text-center space-y-3">

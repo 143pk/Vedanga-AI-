@@ -37,7 +37,6 @@ import { UserProfile } from "../types";
 import { getProgrammaticPage, ProgrammaticPageData } from "../seo/programmaticEngine";
 import { searchSeoTopics, SearchResultItem } from "../seo/seoSearch";
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "../seo/astrologyData";
-import { AdSenseUnit } from "./AdSenseUnit";
 
 interface LearningViewProps {
   user: UserProfile;
@@ -581,7 +580,6 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
 
         {/* Article Body Container */}
         <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-8">
-          <AdSenseUnit className="mb-6" />
           {/* Main Title & EEAT Metadata Header */}
           <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 p-6 md:p-10 rounded-3xl shadow-2xl space-y-6">
             <div className="flex flex-wrap items-center gap-2">
