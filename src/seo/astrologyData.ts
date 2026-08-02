@@ -1,4 +1,4 @@
-// Comprehensive Vedic Astrology Knowledge Base for Programmatic SEO Engine
+// Comprehensive Vedic Astrology Knowledge Base for Parashari Analysis
 
 export interface PlanetInfo {
   name: string;
@@ -331,23 +331,23 @@ export const HIGH_INTENT_LANDINGS = [
   },
   {
     slug: "birth-chart-ai",
-    title: "Birth Chart AI – Advanced Vedic Astrological Analysis Engine",
-    description: "In-depth AI birth chart decoding covering Lagna, Moon sign, Nakshatra pada, Shadbala, and divisional charts (D9 Navamsha).",
+    title: "Birth Chart Analysis – Comprehensive Vedic Janma Kundli Guide",
+    description: "In-depth birth chart decoding covering Lagna, Moon sign, Nakshatra pada, Shadbala, and divisional charts (D9 Navamsha).",
     category: "Calculators",
-    h1: "Birth Chart AI: Decode Your Vedic Janma Patrika",
+    h1: "Vedic Birth Chart Analysis: Decode Your Janma Patrika",
     ctaPrompt: "Analyze my birth chart D1 and D9 Navamsha in detail"
   },
   {
     slug: "marriage-prediction",
-    title: "AI Kundli Matching & Marriage Compatibility Predictor",
+    title: "Kundli Matching & Marriage Compatibility Guide",
     description: "36 Gun Milan, Ashtakoot agreement, Manglik Dosh check, Nadi Dosh cancellation analysis, and 7th House marriage prospects.",
     category: "Matching",
-    h1: "Vedic Marriage Compatibility & Ashtakoot Gun Milan AI",
+    h1: "Vedic Marriage Compatibility & Ashtakoot Gun Milan Guide",
     ctaPrompt: "Analyze my marriage timing, spouse characteristics, and Gun Milan compatibility"
   },
   {
     slug: "career-prediction",
-    title: "10th House & Career Astrology Predictor AI",
+    title: "10th House & Career Astrology Analysis",
     description: "Discover your ideal profession, business prospects, government job yogas, and career promotion timelines using D10 Dasamsa chart.",
     category: "Career",
     h1: "Vedic Career Astrology & Professional Destiny Analysis",
@@ -371,7 +371,7 @@ export const HIGH_INTENT_LANDINGS = [
   },
   {
     slug: "planet-calculator",
-    title: "Planetary Strength & Shadbala Calculator AI",
+    title: "Planetary Strength & Shadbala Calculator",
     description: "Calculate planetary dignity, combustion, retrogression, Exaltation (Uchcha), Debilitation (Neecha), and Shadbala scores.",
     category: "Calculators",
     h1: "Planetary Strengths (Shadbala) & Dignity Calculator",
@@ -379,16 +379,16 @@ export const HIGH_INTENT_LANDINGS = [
   },
   {
     slug: "ascendant-calculator",
-    title: "Lagna / Rising Sign Calculator & Personality Decoder",
+    title: "Lagna / Rising Sign Calculator & Personality Analysis",
     description: "Find your exact Lagna (Ascendant), Lagna Lord strength, and physical blueprint according to authentic Parashari principles.",
     category: "Calculators",
-    h1: "Ascendant (Lagna) Calculator & Life Blueprint Decoder",
+    h1: "Ascendant (Lagna) Calculator & Life Blueprint Guide",
     ctaPrompt: "Identify my Lagna sign and explain my primary life purpose"
   },
   {
     slug: "moon-sign-calculator",
-    title: "Chandra Rashi (Moon Sign) Calculator & Mind Blueprint",
-    description: "Calculate your Moon sign in Vedic Astrology to unlock your psychological nature, emotional needs, and Sade Sati status.",
+    title: "Chandra Rashi (Moon Sign) Calculator & Mind Analysis",
+    description: "Calculate your Moon sign in Vedic Astrology to understand your psychological nature, emotional needs, and Sade Sati status.",
     category: "Calculators",
     h1: "Chandra Rashi (Moon Sign) Calculator & Emotional Blueprint",
     ctaPrompt: "Calculate my Moon sign and analyze my emotional and psychological traits"

@@ -12,6 +12,7 @@ Allow: /article/
 Allow: /sitemap*.xml
 
 Sitemap: ${BASE_URL}/sitemap.xml
+Sitemap: ${BASE_URL}/sitemap-daily.xml
 Sitemap: ${BASE_URL}/sitemap-articles.xml
 Sitemap: ${BASE_URL}/sitemap-astrology-combinatorics.xml
 Sitemap: ${BASE_URL}/sitemap-landing.xml
@@ -25,6 +26,10 @@ export function generateSitemapIndex(customBaseUrl?: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${BASE_URL}/sitemap-daily.xml</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
   <sitemap>
     <loc>${BASE_URL}/sitemap-landing.xml</loc>
     <lastmod>${today}</lastmod>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Sun, Heart, Briefcase, Activity, Coins, Sparkles, RefreshCw, Star, Compass, Flame } from "lucide-react";
 import { HoroscopeData, UserProfile } from "../types";
+import { AdSenseUnit } from "./AdSenseUnit";
 
 interface HoroscopeViewProps {
   user: UserProfile;
@@ -41,6 +42,7 @@ export const HoroscopeView: React.FC<HoroscopeViewProps> = ({ user }) => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 font-sans pb-24 text-slate-100">
+      <AdSenseUnit className="mb-6" />
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/30 rounded-3xl p-5 mb-6 backdrop-blur-md shadow-xl">
         <div className="flex items-center justify-between">

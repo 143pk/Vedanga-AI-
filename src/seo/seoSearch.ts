@@ -1,4 +1,4 @@
-// Smart SEO Real-Time Search Engine for Vedanga AI
+// Real-Time Vedic Astrology Search Index for Vedanga AI
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "./astrologyData";
 
 export interface SearchResultItem {

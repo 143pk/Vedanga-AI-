@@ -33,6 +33,8 @@ import {
 import { getProgrammaticPage, ProgrammaticPageData } from "../seo/programmaticEngine";
 import { searchSeoTopics, SearchResultItem } from "../seo/seoSearch";
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "../seo/astrologyData";
+import { DailyIndexer } from "../seo/daily";
+import { AdSenseUnit } from "./AdSenseUnit";
 
 export interface BlogArticleItem {
   id: string;
@@ -346,7 +348,21 @@ export const BlogHub: React.FC = () => {
   }, [searchQuery]);
 
   const displayArticles = useMemo(() => {
-    let base = CURATED_BLOG_POSTS;
+    const dailyPublished = DailyIndexer.getAllArticles().map((a): BlogArticleItem => ({
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      category: "Daily Content",
+      readTime: a.readTime,
+      publishedAt: a.publishedAt,
+      author: a.author,
+      excerpt: a.metaDescription,
+      featured: true,
+      tags: [a.moduleType, "Daily Panchang", "Astrology"],
+      imageUrl: a.featuredImageUrl
+    }));
+
+    let base = [...dailyPublished, ...CURATED_BLOG_POSTS];
 
     if (activeCategory === "Bookmarks") {
       return base.filter((art) => bookmarkedSlugs.includes(art.slug));
@@ -440,6 +456,9 @@ export const BlogHub: React.FC = () => {
 
       {/* MAIN CONTAINER */}
       <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Top Header Ad Banner */}
+        <AdSenseUnit slot="2189033269" className="mb-6" />
+
         {/* ARTICLE READER VIEW */}
         {selectedSlug && articlePageData ? (
           <article className="space-y-8 animate-fadeIn">
@@ -589,6 +608,9 @@ export const BlogHub: React.FC = () => {
               </section>
             </div>
 
+            {/* Mid-Article Ad Banner */}
+            <AdSenseUnit slot="2189033269" label="SPONSORED ASTROLOGY CONTENT" className="my-6" />
+
             {/* Main Article Sections */}
             <section className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-8">
               {articlePageData.sections.map((section, idx) => (
@@ -603,6 +625,9 @@ export const BlogHub: React.FC = () => {
                 </div>
               ))}
             </section>
+
+            {/* Post-Article Ad Banner */}
+            <AdSenseUnit slot="2189033269" label="ADVERTISEMENT" className="my-6" />
 
             {/* Clickable Astrological Element Cards */}
             <section className="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs space-y-6">
@@ -813,6 +838,9 @@ export const BlogHub: React.FC = () => {
               </div>
             </header>
 
+            {/* Index Header Ad Banner */}
+            <AdSenseUnit slot="2189033269" label="SPONSORED ASTROLOGY CONTENT" className="my-6" />
+
             {/* Featured Hero Article */}
             {displayArticles.length > 0 && activeCategory === "All" && !searchQuery && (
               <section className="space-y-3">
@@ -942,6 +970,9 @@ export const BlogHub: React.FC = () => {
                 </article>
               ))}
             </section>
+
+            {/* Index Bottom Ad Banner */}
+            <AdSenseUnit slot="2189033269" label="ADVERTISEMENT" className="mt-10 mb-4" />
           </div>
         )}
       </main>

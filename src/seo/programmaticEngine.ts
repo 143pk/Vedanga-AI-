@@ -1,5 +1,6 @@
 // Comprehensive Programmatic SEO Engine for Vedanga AI
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "./astrologyData";
+import { DailyIndexer, DailyContentScheduler } from "./daily";
 
 export interface FAQItem {
   question: string;
@@ -134,8 +135,8 @@ function generateTopicFaqs(topicTitle: string, category: string, primaryPlanet?:
       answer: `Rahu adds amplification, material obsession, and innovation, while Ketu brings detachment, deep intuition, and spiritual research. You can check this instantly in Vedanga AI.`
     },
     {
-      question: `What makes Vedanga AI the most authoritative Vedic Astrology engine?`,
-      answer: `Vedanga AI combines authentic Maharishi Parashara and Jaimini Jyotish algorithms with advanced Gemini AI intelligence to deliver precise, compassionate, and actionable astrological guidance.`
+      question: `What makes Vedanga AI an authoritative Vedic Astrology platform?`,
+      answer: `Vedanga AI combines authentic Maharishi Parashara and Jaimini Jyotish principles with accurate astronomical algorithms to deliver precise, compassionate, and actionable astrological guidance.`
     },
     {
       question: `How does ${topicTitle} influence mental peace and stress management?`,
@@ -176,8 +177,8 @@ function generateTopicClusterLinks(slug: string): RelatedLink[] {
     { title: `${pName} with Mars Conjunction`, slug: `${pKey}-mars-conjunction`, category: "Conjunctions", description: `High vitality, executive fire, competitive ambition, and physical stamina.` },
     { title: `${pName} Remedies & Beej Mantras`, slug: `${pKey}-remedies`, category: "Remedies", description: `Authentic Stotras, Beej Mantras, fasting protocols, and charity items to strengthen ${pName}.` },
     { title: `${pName} Gemstone Protocol`, slug: `${pKey}-gemstone-guide`, category: "Gemstones", description: `Metal selection, consecration mantras, and auspicious muhurat for wearing ${pMatch?.gemstone || "sacred gems"}.` },
-    { title: "Free AI Kundli Generator", slug: "ai-kundli", category: "Calculators", description: "Generate complete Janma Kundli with planetary positions and active Dasha." },
-    { title: "AI Marriage Compatibility & Gun Milan", slug: "marriage-prediction", category: "Matching", description: "36 Gun Milan, Ashtakoot match, Manglik Dosh check, and marriage prospects." },
+    { title: "Janma Kundli Generator", slug: "birth-chart-ai", category: "Calculators", description: "Generate complete Janma Kundli with planetary positions and active Dasha." },
+    { title: "Vedic Marriage Compatibility & Gun Milan", slug: "marriage-prediction", category: "Matching", description: "36 Gun Milan, Ashtakoot match, Manglik Dosh check, and marriage prospects." },
     { title: "Vimshottari Dasha Timeline Calculator", slug: "dasha-analysis", category: "Dasha", description: "Explore active Mahadasha, Antardasha, and upcoming planetary shifts." },
     { title: "Career Astrology & 10th House Predictor", slug: "career-prediction", category: "Career", description: "Discover professional success, government job yogas, and business timing." },
     { title: "Janma Nakshatra Calculator", slug: "nakshatra-calculator", category: "Calculators", description: "Find your birth star, ruling deity, and Pada trait analysis." }
@@ -191,18 +192,57 @@ export function getProgrammaticPage(rawSlug: string): ProgrammaticPageData {
   const slug = toSlug(rawSlug);
   const todayStr = new Date().toISOString().split("T")[0];
 
+  // 0. Ensure Today's Daily Content is published & check Daily Indexer
+  DailyContentScheduler.ensureTodayPublished();
+
+  // If exact slug exists or base daily slug (e.g., "daily-panchang" -> "daily-panchang-YYYY-MM-DD")
+  let dailyArticle = DailyIndexer.getArticleBySlug(slug);
+  if (!dailyArticle) {
+    // Try matching today's slug prefix
+    const matchingDaily = DailyIndexer.getAllArticles().find(a => a.slug === `${slug}-${todayStr}` || a.slug.startsWith(slug));
+    if (matchingDaily) {
+      dailyArticle = matchingDaily;
+    }
+  }
+
+  if (dailyArticle) {
+    return {
+      slug: dailyArticle.slug,
+      title: `${dailyArticle.title} | Vedanga AI`,
+      metaDescription: dailyArticle.metaDescription,
+      canonicalUrl: dailyArticle.canonicalUrl,
+      category: dailyArticle.category,
+      h1: dailyArticle.h1,
+      author: dailyArticle.author,
+      updatedAt: dailyArticle.publishedAt,
+      readTime: dailyArticle.readTime,
+      scripturalShloka: "ॐ नमो ब्रह्मादिभ्यो विज्ञानसम्प्रदायकर्तृभ्यो वंशऋषिभ्यो महद्भ्यो नमो गुरुभ्यः॥",
+      executiveSummary: dailyArticle.metaDescription,
+      sections: dailyArticle.sections.map(s => ({ title: s.title, content: s.content })),
+      faqs: dailyArticle.faqs,
+      topicClusterLinks: dailyArticle.internalLinks || generateTopicClusterLinks(slug),
+      relatedPlanets: PLANETS,
+      relatedHouses: HOUSES,
+      relatedSigns: SIGNS,
+      relatedNakshatras: NAKSHATRAS,
+      ctaPrompt: "Calculate your personalized Janma Kundli and active Vimshottari Dasha with Vedanga AI.",
+      wordCount: dailyArticle.wordCount,
+      schemaJsonLd: dailyArticle.schemaJsonLd
+    };
+  }
+
   // 1. Check High-Intent Landing Pages
   const landingMatch = HIGH_INTENT_LANDINGS.find(l => l.slug === slug);
   if (landingMatch) {
     const faqs = generateTopicFaqs(landingMatch.h1, landingMatch.category);
     
-    const sec1 = `Welcome to Vedanga AI's ${landingMatch.h1}. In Vedic Astrology (Jyotish Shastra), precise mathematical calculations are essential for accurate predictions. This authoritative engine combines Swiss Ephemeris longitudes with artificial intelligence to deliver detailed insights rooted in Maharishi Parashara's classical Brihat Parashara Hora Shastra, Saravali, and Phaladeepika.\n\nWhether you are analyzing your personal Janma Kundli, calculating active Vimshottari Dasha periods, evaluating 36 Ashtakoot Gun Milan points for marriage compatibility, or determining professional success via the D10 Dasamsa chart, Vedanga AI processes exact planetary degrees, house cusps (Sripati / Placidus), Ashtakavarga bindu scores, and Shadbala planetary strengths in real time.\n\nOur system bridges classical Sanskrit scriptural wisdom with modern user interface design, ensuring that seekers receive compassionate, highly actionable astrological guidance without complex manual mathematical calculations.`;
+    const sec1 = `Welcome to Vedanga AI's ${landingMatch.h1}. In Vedic Astrology (Jyotish Shastra), precise mathematical calculations are essential for accurate predictions. This authoritative platform combines Swiss Ephemeris longitudes with classical Parashari principles to deliver detailed insights rooted in Maharishi Parashara's classical Brihat Parashara Hora Shastra, Saravali, and Phaladeepika.\n\nWhether you are analyzing your personal Janma Kundli, calculating active Vimshottari Dasha periods, evaluating 36 Ashtakoot Gun Milan points for marriage compatibility, or determining professional success via the D10 Dasamsa chart, Vedanga AI processes exact planetary degrees, house cusps (Sripati / Placidus), Ashtakavarga bindu scores, and Shadbala planetary strengths in real time.\n\nOur system bridges classical Sanskrit scriptural wisdom with modern user interface design, ensuring that seekers receive compassionate, highly actionable astrological guidance without complex manual mathematical calculations.`;
     
     const sec2 = `Key Astrological Metrics & Computational Architecture:\n\n1. Lagna & Lagna Lord (Ascendant): Determines physical stamina, overall life direction, vitality, and primary personal orientation.\n2. Moon Sign (Chandra Rashi) & Birth Nakshatra: Governs the mind (Manas), emotional subconscious, intuitive abilities, and Sade Sati vulnerability.\n3. Vimshottari Dasha Axis (120-Year Cycle): Identifies the exact ruling Mahadasha, Antardasha, and Pratyantardasha planets governing your current life timing.\n4. Divisional Charts (Shodashvarga): Examines the D9 Navamsha for marriage and spiritual growth, D10 Dasamsa for career and authority, and D7 Saptamsha for progeny.\n5. Planetary Dignities & Aspects (Drishti): Evaluates Exaltation (Uchcha), Debilitation (Neecha), Combustion (Mudhya), Retrogression (Vakra), and Mutual Aspects.`;
     
     const sec3 = `Authentic Vedic Remedies, Mantras & Remedial Protocols:\n\nIn classical Jyotish, remedies do not alter cosmic karma; rather, they refine the practitioner's inner subtle body (Sukshma Sharira) to withstand or transcend planetary afflictions.\n\n- Morning Solar Homage: Offer water to Surya Dev in a copper vessel at sunrise while chanting the Gayatri Mantra or Aditya Hridayam.\n- Beej Mantra Japa: Recite the planetary Beej Mantra 108 times daily using a consecrated Rudraksha or Sphatik mala.\n- Sattvic Charity (Dana): Donate yellow lentils, sesame seeds, grains, or copper items on consecrated planetary days to neutralize afflicted malefic energy.\n- Gemstone Consecration: Wear authentic natural gemstones set in recommended metals (Gold, Silver, Copper, Panchdhatu) after verifying Lagna lordship and house position.`;
 
-    const sec4 = `How to Use Vedanga AI for Birth Chart Verification:\n\nTo begin your reading, simply enter your exact Date of Birth, Time of Birth (AM/PM), and Birth Location into Vedanga AI. The engine instantly computes your Sidereal Kundli using the Lahiri Ayanamsha (Chitrapaksha) and renders an interactive chart. You can then ask personalized questions to Guru Chat or navigate through dedicated analysis tabs for Horoscope, Dasha, Kundli Matching, and Learning Modules.`;
+    const sec4 = `How to Use Vedanga AI for Birth Chart Verification:\n\nTo begin your reading, simply enter your exact Date of Birth, Time of Birth (AM/PM), and Birth Location into Vedanga AI. The system instantly computes your Sidereal Kundli using the Lahiri Ayanamsha (Chitrapaksha) and renders an interactive chart. You can then ask personalized questions to Guru Chat or navigate through dedicated analysis tabs for Horoscope, Dasha, Kundli Matching, and Learning Modules.`;
 
     const fullContent = `${sec1}\n\n${sec2}\n\n${sec3}\n\n${sec4}`;
     const wordCount = fullContent.split(/\s+/).length + faqs.map(f => f.question + " " + f.answer).join(" ").split(/\s+/).length;

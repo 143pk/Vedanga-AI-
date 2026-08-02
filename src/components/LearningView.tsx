@@ -37,6 +37,7 @@ import { UserProfile } from "../types";
 import { getProgrammaticPage, ProgrammaticPageData } from "../seo/programmaticEngine";
 import { searchSeoTopics, SearchResultItem } from "../seo/seoSearch";
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "../seo/astrologyData";
+import { AdSenseUnit } from "./AdSenseUnit";
 
 interface LearningViewProps {
   user: UserProfile;
@@ -580,6 +581,7 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
 
         {/* Article Body Container */}
         <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-8">
+          <AdSenseUnit className="mb-6" />
           {/* Main Title & EEAT Metadata Header */}
           <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 p-6 md:p-10 rounded-3xl shadow-2xl space-y-6">
             <div className="flex flex-wrap items-center gap-2">
@@ -688,7 +690,7 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                  <HelpCircle className="w-4 h-4" /> Scriptural FAQ Engine
+                  <HelpCircle className="w-4 h-4" /> Scriptural FAQ & Analysis
                 </span>
               </div>
               <h3 className="font-serif text-2xl font-bold text-amber-100">
@@ -1062,11 +1064,11 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
                 </span>
                 <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" /> Webapp Daily Auto-Publish Engine Active
+                  <Zap className="w-3.5 h-3.5 text-amber-400" /> Daily Vedic Research & Insights Active
                 </span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Our Gemini AI engine automatically scans top daily searched Vedic Astrology topics (Panchang, Sade Sati, Transits, Vrats, Remedies) and generates fresh Vedic insights every 24 hours.
+                Updated daily with classical Parashari analysis on Panchang, Sade Sati, planetary transits, Vrats, and authentic Vedic remedies based on sidereal astronomical calculations.
               </p>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-2xl border border-slate-800 shrink-0">
@@ -1143,7 +1145,7 @@ export const LearningView: React.FC<LearningViewProps> = ({ user }) => {
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                     Instant Knowledge Base Results for "{searchQuery}"
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Real-Time Engine</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Live Index</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">

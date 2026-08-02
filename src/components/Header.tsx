@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
             <div className="flex items-center space-x-1.5 text-[10px] text-emerald-700 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Vedic Engine Online</span>
+              <span>Sidereal Ephemeris Active</span>
             </div>
           </div>
         </button>

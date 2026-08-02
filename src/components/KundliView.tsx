@@ -718,7 +718,7 @@ export const KundliView: React.FC<KundliViewProps> = ({ user }) => {
             <div className="space-y-4">
               <div className="bg-slate-900/80 border border-amber-500/30 rounded-3xl p-4">
                 <h3 className="font-serif text-sm font-bold text-amber-200 mb-2 flex items-center gap-2">
-                  <Scale className="w-4 h-4 text-amber-400" /> Shadbala (Six-fold Planetary Strength Engine)
+                  <Scale className="w-4 h-4 text-amber-400" /> Shadbala (Six-fold Planetary Strength Analysis)
                 </h3>
                 <p className="text-xs text-slate-400 mb-4">
                   Evaluates Sthanabala (Positional), Digbala (Directional), Kaalabala (Temporal), Cheshtabala (Motional), Naisargikabala (Natural), and Drikbala (Aspectual) virupas.

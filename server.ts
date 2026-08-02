@@ -13,11 +13,15 @@ import {
   generateCombinatoricsSitemap,
   generateRssFeed
 } from "./src/seo/sitemapGenerator";
+import { DailyContentScheduler, DailyIndexer } from "./src/seo/daily";
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// Initialize automated daily publishing system
+DailyContentScheduler.initializeScheduler();
 
 // -------------------------------------------------------------
 // SEO & GOOGLE SEARCH CONSOLE INITIAL CONFIG
@@ -69,6 +73,20 @@ app.use((req, res, next) => {
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
     return res.status(200).send(generateSitemapIndex(domainUrl));
+  }
+
+  if (urlPath === "/sitemap-daily.xml") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=1800, s-maxage=3600");
+    DailyContentScheduler.ensureTodayPublished();
+    return res.status(200).send(DailyIndexer.generateDailySitemap(domainUrl));
+  }
+
+  if (urlPath === "/rss.xml") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=1800, s-maxage=3600");
+    DailyContentScheduler.ensureTodayPublished();
+    return res.status(200).send(DailyIndexer.generateDailyRssFeed(domainUrl));
   }
 
   if (urlPath === "/sitemap-landing.xml") {
