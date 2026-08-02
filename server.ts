@@ -32,6 +32,22 @@ let seoSettings = {
   lastPingedAt: null as string | null,
 };
 
+// -------------------------------------------------------------
+// VERCEL SERVERLESS URL REWRITE NORMALIZATION MIDDLEWARE
+// -------------------------------------------------------------
+app.use((req, res, next) => {
+  // In Vercel serverless function environment, rewrites map requests to /api/index
+  const forwardedUri = (req.headers["x-forwarded-uri"] as string) || (req.headers["x-matched-path"] as string) || (req.headers["x-now-route-matches"] as string);
+
+  if (forwardedUri && forwardedUri.startsWith("/")) {
+    req.url = forwardedUri;
+  } else if (req.url.startsWith("/api/index")) {
+    const stripped = req.url.replace(/^\/api\/index/, "");
+    req.url = stripped.startsWith("/") ? stripped : `/${stripped}`;
+  }
+  next();
+});
+
 // Top-Level Priority Middleware: Intercept any Google Search Console Verification, Sitemaps, Robots, Ads
 app.use((req, res, next) => {
   const urlPath = (req.path || req.url || "").split("?")[0];
@@ -2354,11 +2370,13 @@ app.get("/api/seo/page/:slug", (req, res) => {
   return res.json(pageData);
 });
 
-// Server-Side Rendered (SSR) HTML page for /learn/:slug (optimizes Googlebot & Social Media Crawlers)
-app.get("/learn/:slug", (req, res) => {
-  const pageData = getProgrammaticPage(req.params.slug);
+// Server-Side Rendered (SSR) HTML page for /learn and /learn/:slug (optimizes Googlebot & Social Media Crawlers)
+app.get(["/learn", "/learn/", "/learn/:slug"], (req, res) => {
+  try {
+    const rawSlug = req.params.slug || "ai-kundli";
+    const pageData = getProgrammaticPage(rawSlug);
 
-  const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2427,8 +2445,12 @@ app.get("/learn/:slug", (req, res) => {
 </body>
 </html>`;
 
-  res.type("text/html");
-  res.send(html);
+    res.type("text/html");
+    return res.status(200).send(html);
+  } catch (err: any) {
+    console.error("[SSR ERROR] Failed to render /learn route:", err);
+    return res.status(500).type("text/html").send(`<!DOCTYPE html><html><body style="background:#030712;color:#f3f4f6;font-family:sans-serif;padding:40px;text-align:center;"><h1>500 - Server Error</h1><p>Failed to generate astrological guidance page.</p><a href="/" style="color:#f59e0b;">Return to Vedanga AI</a></body></html>`);
+  }
 });
 
 // Dynamic robots.txt
@@ -2522,6 +2544,13 @@ app.get("/api/admin/health", authenticateAdmin, (req, res) => {
   });
 });
 
+// Fallback 404 Handler for API endpoints
+app.use("/api/*", (req, res) => {
+  if (!res.headersSent) {
+    return res.status(404).json({ error: "API endpoint not found", path: req.path });
+  }
+});
+
 // -------------------------------------------------------------
 // 3. VITE SERVER & STATIC HOSTING
 // -------------------------------------------------------------
@@ -2540,6 +2569,13 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Fallback 404 for unmatched non-API routes (e.g. in Vercel serverless context or invalid routes)
+  app.use((req, res) => {
+    if (!res.headersSent) {
+      return res.status(404).type("text/html").send("<!DOCTYPE html><html><body style='background:#030712;color:#f3f4f6;font-family:sans-serif;padding:40px;text-align:center;'><h1>404 - Page Not Found</h1><p>The requested astrological page could not be found.</p><a href='/' style='color:#f59e0b;'>Return to Vedanga AI</a></body></html>");
+    }
+  });
 
   if (!process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {

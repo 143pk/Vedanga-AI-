@@ -2,35 +2,7 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/sitemap(.*)",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/ads.txt",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/rss.xml",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/google(.*)",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/learn/(.*)",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/((?!api|sitemap|robots\\.txt|ads\\.txt|rss\\.xml|google|learn|assets|favicon|icon).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
