@@ -32,16 +32,65 @@ let seoSettings = {
   lastPingedAt: null as string | null,
 };
 
-// Top-Level Priority Middleware: Intercept any Google Search Console HTML Verification File
+// Top-Level Priority Middleware: Intercept any Google Search Console Verification, Sitemaps, Robots, Ads
 app.use((req, res, next) => {
-  const urlPath = req.path || req.url || "";
+  const urlPath = (req.path || req.url || "").split("?")[0];
+
   if (/^\/google[a-zA-Z0-9_\-]*\.html$/i.test(urlPath) || urlPath === "/google-site-verification.html") {
-    const filename = urlPath.replace(/^\//, "").split("?")[0];
+    const filename = urlPath.replace(/^\//, "");
     const token = seoSettings.googleSiteVerification || filename;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     return res.status(200).send(`google-site-verification: ${filename}\ngoogle-site-verification: ${token}`);
   }
+
+  if (urlPath === "/sitemap.xml") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+    return res.status(200).send(generateSitemapIndex());
+  }
+
+  if (urlPath === "/sitemap-landing.xml") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+    return res.status(200).send(generateLandingSitemap());
+  }
+
+  if (urlPath === "/sitemap-astrology-combinatorics.xml") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+    return res.status(200).send(generateCombinatoricsSitemap());
+  }
+
+  if (urlPath === "/sitemap-news.xml") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+    return res.status(200).send(generateLandingSitemap());
+  }
+
+  if (urlPath === "/sitemap-articles.xml") {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+    const today = new Date().toISOString().split("T")[0];
+    const articles = typeof cmsArticlesStore !== "undefined" ? cmsArticlesStore : [];
+    const articlePages = articles
+      .filter((a: any) => a.status === "Published")
+      .map((a: any) => `  <url>\n    <loc>https://vedanga-ai.vercel.app/article/${a.id}</loc>\n    <lastmod>${a.updatedAt || today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>`)
+      .join("\n");
+    return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${articlePages}\n</urlset>`);
+  }
+
+  if (urlPath === "/robots.txt") {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    return res.status(200).send(generateRobotsTxt());
+  }
+
+  if (urlPath === "/ads.txt") {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    const pubId = process.env.ADSENSE_PUB_ID || "pub-6855799245720155";
+    return res.status(200).send(`google.com, ${pubId}, DIRECT, f08c47fec0942fa0`);
+  }
+
   next();
 });
 

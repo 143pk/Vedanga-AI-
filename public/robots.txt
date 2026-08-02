@@ -1,3 +1,11 @@
 User-agent: *
 Allow: /
+Allow: /learn/
+Allow: /article/
+Allow: /sitemap*.xml
+
 Sitemap: https://vedanga-ai.vercel.app/sitemap.xml
+Sitemap: https://vedanga-ai.vercel.app/sitemap-articles.xml
+Sitemap: https://vedanga-ai.vercel.app/sitemap-astrology-combinatorics.xml
+Sitemap: https://vedanga-ai.vercel.app/sitemap-landing.xml
+Sitemap: https://vedanga-ai.vercel.app/sitemap-news.xml

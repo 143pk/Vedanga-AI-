@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://vedanga-ai.vercel.app/sitemap-landing.xml</loc>
+    <lastmod>2026-08-02</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://vedanga-ai.vercel.app/sitemap-articles.xml</loc>
+    <lastmod>2026-08-02</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://vedanga-ai.vercel.app/sitemap-astrology-combinatorics.xml</loc>
+    <lastmod>2026-08-02</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://vedanga-ai.vercel.app/sitemap-news.xml</loc>
+    <lastmod>2026-08-02</lastmod>
+  </sitemap>
+</sitemapindex>

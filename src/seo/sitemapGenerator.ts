@@ -1,9 +1,10 @@
 // Programmatic Sitemap, RSS Feed & Robots.txt Generator
 import { PLANETS, HOUSES, SIGNS, NAKSHATRAS, HIGH_INTENT_LANDINGS } from "./astrologyData";
 
-const BASE_URL = process.env.APP_URL || "https://vedanga-ai.vercel.app";
+const DEFAULT_BASE_URL = process.env.APP_URL || "https://vedanga-ai.vercel.app";
 
-export function generateRobotsTxt(): string {
+export function generateRobotsTxt(customBaseUrl?: string): string {
+  const BASE_URL = customBaseUrl || DEFAULT_BASE_URL;
   return `User-agent: *
 Allow: /
 Allow: /learn/
@@ -18,7 +19,8 @@ Sitemap: ${BASE_URL}/sitemap-news.xml
 `;
 }
 
-export function generateSitemapIndex(): string {
+export function generateSitemapIndex(customBaseUrl?: string): string {
+  const BASE_URL = customBaseUrl || DEFAULT_BASE_URL;
   const today = new Date().toISOString().split("T")[0];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -41,7 +43,8 @@ export function generateSitemapIndex(): string {
 </sitemapindex>`;
 }
 
-export function generateLandingSitemap(): string {
+export function generateLandingSitemap(customBaseUrl?: string): string {
+  const BASE_URL = customBaseUrl || DEFAULT_BASE_URL;
   const today = new Date().toISOString().split("T")[0];
   const staticUrls = [
     `${BASE_URL}/`,
@@ -70,7 +73,8 @@ ${all
 </urlset>`;
 }
 
-export function generateCombinatoricsSitemap(): string {
+export function generateCombinatoricsSitemap(customBaseUrl?: string): string {
+  const BASE_URL = customBaseUrl || DEFAULT_BASE_URL;
   const today = new Date().toISOString().split("T")[0];
   const urls: string[] = [];
 
@@ -122,7 +126,8 @@ ${urls
 </urlset>`;
 }
 
-export function generateRssFeed(cmsArticles: any[]): string {
+export function generateRssFeed(cmsArticles: any[], customBaseUrl?: string): string {
+  const BASE_URL = customBaseUrl || DEFAULT_BASE_URL;
   const today = new Date().toUTCString();
   const itemsXml = cmsArticles
     .slice(0, 20)
