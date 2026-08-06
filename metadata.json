@@ -1,5 +1,5 @@
 {
-  "name": "Vedanga AI – Vedic Astrology & Kundli Advisor",
+  "name": "Vedic Astrology Journal",
   "description": "Comprehensive Vedic Astrology Blog and Knowledge Journal providing scripturally verified articles on Planets, Bhavas, Rashis, Nakshatras, and Classical Remedies.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

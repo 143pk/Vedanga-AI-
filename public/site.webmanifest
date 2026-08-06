@@ -1,0 +1,20 @@
+{
+  "name": "Vedic Astrology Journal",
+  "short_name": "Vedic Astrology Journal",
+  "description": "Authentic Jyotish Research, Classical Vedic Knowledge, Articles, and Planetary Insights.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0f172a",
+  "background_color": "#020617",
+  "display": "standalone"
+}

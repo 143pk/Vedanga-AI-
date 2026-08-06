@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="70%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </radialGradient>
+
+    <!-- Gold Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="30%" stop-color="#f59e0b" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+
+    <!-- Glowing Sun Center Gradient -->
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </radialGradient>
+
+    <!-- Soft Inner Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Circular Base -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)" stroke="url(#goldGrad)" stroke-width="12" />
+
+  <!-- Outer Zodiac Ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-dasharray="4 8" opacity="0.6" />
+  <circle cx="256" cy="256" r="195" fill="none" stroke="url(#goldGrad)" stroke-width="2" opacity="0.8" />
+
+  <!-- 12 Radiating Rays for Navagraha & Rashis -->
+  <g stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round" opacity="0.9">
+    <line x1="256" y1="65" x2="256" y2="100" />
+    <line x1="256" y1="412" x2="256" y2="447" />
+    <line x1="65" y1="256" x2="100" y2="256" />
+    <line x1="412" y1="256" x2="447" y2="256" />
+
+    <line x1="121" y1="121" x2="146" y2="146" />
+    <line x1="366" y1="366" x2="391" y2="391" />
+    <line x1="391" y1="121" x2="366" y2="146" />
+    <line x1="121" y1="366" x2="146" y2="391" />
+
+    <line x1="82" y1="184" x2="114" y2="193" />
+    <line x1="398" y1="328" x2="430" y2="319" />
+    <line x1="184" y1="82" x2="193" y2="114" />
+    <line x1="328" y1="398" x2="319" y2="430" />
+    <line x1="328" y1="114" x2="319" y2="82" />
+    <line x1="184" y1="430" x2="193" y2="398" />
+    <line x1="398" y1="184" x2="430" y2="193" />
+    <line x1="82" y1="328" x2="114" y2="319" />
+  </g>
+
+  <!-- Central Celestial Sun & Lotus Emblem -->
+  <g filter="url(#glow)">
+    <!-- 8 Lotus Petal Flourishes -->
+    <path d="M256,130 C270,170 290,190 330,190 C290,190 270,210 256,256 C242,210 222,190 182,190 C222,190 242,170 256,130 Z" fill="url(#goldGrad)" opacity="0.85" />
+    <path d="M256,382 C270,342 290,322 330,322 C290,322 270,302 256,256 C242,302 222,322 182,322 C222,322 242,342 256,382 Z" fill="url(#goldGrad)" opacity="0.85" />
+    <path d="M130,256 C170,270 190,290 190,330 C190,290 210,270 256,256 C210,242 190,222 190,182 C190,222 170,242 130,256 Z" fill="url(#goldGrad)" opacity="0.85" />
+    <path d="M382,256 C342,270 322,290 322,330 C322,290 302,270 256,256 C302,242 322,222 322,182 C322,222 342,242 382,256 Z" fill="url(#goldGrad)" opacity="0.85" />
+
+    <!-- Center Sun Orb -->
+    <circle cx="256" cy="256" r="62" fill="url(#sunGlow)" stroke="#fef08a" stroke-width="4" />
+    
+    <!-- Central Jyotish Star Diamond -->
+    <polygon points="256,210 270,256 256,302 242,256" fill="#020617" />
+    <polygon points="210,256 256,270 302,256 256,242" fill="#020617" />
+    <circle cx="256" cy="256" r="12" fill="#fef08a" />
+  </g>
+</svg>
